@@ -99,7 +99,7 @@ task.spawn(applyUserSkinWhenReady)
 
 repeat task.wait() until game:IsLoaded()
 
--- ===================== GLAZIER DUELS - STARTUP SPLASH =====================
+-- ===================== SALEMSDUELS - STARTUP SPLASH =====================
 do
 local Players = game:GetService("Players")
 local LP2 = Players.LocalPlayer
