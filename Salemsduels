@@ -1017,7 +1017,7 @@ local function buildGui()
 	main.BackgroundColor3=BG;main.BackgroundTransparency=0.05;main.BorderSizePixel=0;main.ClipsDescendants=false
 	Instance.new("UICorner",main).CornerRadius=UDim.new(0,9)
 	
-	-- 🎄 FONDO NAVIDEÑO 🎄
+	-- 🎄 FONDO NAVIDEÑO (Inicial) 🎄
 	local bgImage = Instance.new("ImageLabel", main)
 	bgImage.Size = UDim2.new(1, 0, 1, 0)
 	bgImage.Position = UDim2.new(0, 0, 0, 0)
@@ -1038,7 +1038,7 @@ local function buildGui()
 	borderStroke.Transparency = 0.2
 	borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-	-- Lógica para cambiar el fondo entre los 9 de Catbox
+	-- 🖼️ LÓGICA PARA CAMBIAR DE FONDO (Catbox) 🖼️
 	local bgIndex = 1
 	local urlList = {
 		"https://files.catbox.moe/ca5tsq.jpg",
@@ -1051,32 +1051,60 @@ local function buildGui()
 		"https://files.catbox.moe/kwm6gk.jpg",
 		"https://files.catbox.moe/ivg1h1.png"
 	}
-	local function loadCatboxBackground(url)
-		if not isfile or not writefile or not getcustomasset then return end
-		local fileName = "SalemsBg_" .. tostring(bgIndex) .. ".png"
-		if not isfile(fileName) then
-			local response = request and request({Url = url, Method = "GET"}) or nil
-			local body = response and (response.Body or response.body) or nil
-			if not body and game.HttpGet then
-				local ok, result = pcall(function() return game:HttpGet(url) end)
-				if ok then body = result end
-			end
-			if body then writefile(fileName, body) end
+	
+	local function loadBackground(url)
+		if type(getcustomasset) ~= "function" or type(writefile) ~= "function" then
+			warn("[SALEMSDUELS] Tu executor no soporta getcustomasset/writefile.")
+			return
 		end
-		if isfile(fileName) then
-			local success, asset = pcall(getcustomasset, fileName)
-			if success and asset then
+		local fileName = "SalemsBg_" .. bgIndex .. ".png"
+		
+		-- Si el archivo ya está descargado, lo usa
+		if isfile and isfile(fileName) then
+			local ok, asset = pcall(getcustomasset, fileName)
+			if ok and asset then
+				bgImage.Image = asset
+				return
+			end
+		end
+		
+		-- Si no, lo descarga usando los métodos del executor
+		local body = nil
+		if request then
+			local ok, res = pcall(request, {Url = url, Method = "GET"})
+			if ok and res and res.Body then body = res.Body end
+		end
+		if not body and syn and syn.request then
+			local ok, res = pcall(syn.request, {Url = url, Method = "GET"})
+			if ok and res and res.Body then body = res.Body end
+		end
+		if not body and game.HttpGet then
+			local ok, res = pcall(function() return game:HttpGet(url) end)
+			if ok then body = res end
+		end
+		
+		if body then
+			writefile(fileName, body)
+			local ok, asset = pcall(getcustomasset, fileName)
+			if ok and asset then
 				bgImage.Image = asset
 			end
+		else
+			warn("[SALEMSDUELS] Error al descargar la imagen de Catbox.")
 		end
 	end
-	local function changeBackground()
+	
+	-- Botón para cambiar el fondo
+	local function cycleBackground()
 		bgIndex = bgIndex + 1
 		if bgIndex > #urlList then bgIndex = 1 end
-		loadCatboxBackground(urlList[bgIndex])
+		loadBackground(urlList[bgIndex])
 	end
-	-- Cargar el primer fondo al inicio
-	task.spawn(function() loadCatboxBackground(urlList[1]) end)
+	
+	-- Cargar el primer fondo de Catbox al iniciar (para reemplazar el de Navidad)
+	task.spawn(function()
+		loadBackground(urlList[1])
+	end)
 
 	local mobileDragMoved=false
 	local function isMobileDragTarget(obj)
@@ -1408,7 +1436,7 @@ local function buildGui()
 	bgBtn.Font = Enum.Font.GothamBold
 	bgBtn.TextSize = 8
 	Instance.new("UICorner", bgBtn).CornerRadius = UDim.new(0, 4)
-	bgBtn.Activated:Connect(changeBackground)
+	bgBtn.Activated:Connect(cycleBackground)
 
 	mkSect("Visual")
 	setAntiLagVisual=mkToggle("Anti Lag",function(on)
