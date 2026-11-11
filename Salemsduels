@@ -1038,6 +1038,46 @@ local function buildGui()
 	borderStroke.Transparency = 0.2
 	borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+	-- Lógica para cambiar el fondo entre los 9 de Catbox
+	local bgIndex = 1
+	local urlList = {
+		"https://files.catbox.moe/ca5tsq.jpg",
+		"https://files.catbox.moe/mwjblg.jpg",
+		"https://files.catbox.moe/p73wuq.jpg",
+		"https://files.catbox.moe/xyd0el.jpeg",
+		"https://files.catbox.moe/udfl8h.jpg",
+		"https://files.catbox.moe/11zcwr.png",
+		"https://files.catbox.moe/5s5xzv.jpg",
+		"https://files.catbox.moe/kwm6gk.jpg",
+		"https://files.catbox.moe/ivg1h1.png"
+	}
+	local function loadCatboxBackground(url)
+		if not isfile or not writefile or not getcustomasset then return end
+		local fileName = "SalemsBg_" .. tostring(bgIndex) .. ".png"
+		if not isfile(fileName) then
+			local response = request and request({Url = url, Method = "GET"}) or nil
+			local body = response and (response.Body or response.body) or nil
+			if not body and game.HttpGet then
+				local ok, result = pcall(function() return game:HttpGet(url) end)
+				if ok then body = result end
+			end
+			if body then writefile(fileName, body) end
+		end
+		if isfile(fileName) then
+			local success, asset = pcall(getcustomasset, fileName)
+			if success and asset then
+				bgImage.Image = asset
+			end
+		end
+	end
+	local function changeBackground()
+		bgIndex = bgIndex + 1
+		if bgIndex > #urlList then bgIndex = 1 end
+		loadCatboxBackground(urlList[bgIndex])
+	end
+	-- Cargar el primer fondo al inicio
+	task.spawn(function() loadCatboxBackground(urlList[1]) end)
+
 	local mobileDragMoved=false
 	local function isMobileDragTarget(obj)
 		return obj==mobileButtonsFrame or (mobileButtonsFrame and obj.Parent==mobileButtonsFrame)
@@ -1293,6 +1333,7 @@ local function buildGui()
 	progressFill=Instance.new("Frame",pbg)
 	progressFill.Size=UDim2.new(0,0,1,0);progressFill.BackgroundColor3=PURPLE;progressFill.BorderSizePixel=0
 	Instance.new("UICorner",progressFill).CornerRadius=UDim.new(1,0)
+	
 	mkSect("Speed")
 	do local row=mkRow(24);mkLabel(row,"Normal");normalBox=mkBox(row,NS,38,42,function(v) if v>0 and v<=500 then NS=v end;saveConfig() end) end
 	do local row=mkRow(24);mkLabel(row,"Carry");carryBox=mkBox(row,CS,38,42,function(v) if v>0 and v<=500 then CS=v end;saveConfig() end) end
@@ -1353,6 +1394,22 @@ local function buildGui()
 		saveConfig()
 	end)
 	setUnwalkVisual=mkToggle("Unwalk",function(on) unwalkEnabled=on;if on then startUnwalk() else stopUnwalk() end end)
+	
+	-- Botón para cambiar el fondo (en la sección Misc)
+	local bgRow = mkRow(24)
+	mkLabel(bgRow, "Change BG")
+	local bgBtn = Instance.new("TextButton", bgRow)
+	bgBtn.Size = UDim2.new(0, 40, 0, 18)
+	bgBtn.Position = UDim2.new(1, -46, 0.5, -9)
+	bgBtn.BackgroundColor3 = INP
+	bgBtn.BorderSizePixel = 0
+	bgBtn.Text = "BG"
+	bgBtn.TextColor3 = W
+	bgBtn.Font = Enum.Font.GothamBold
+	bgBtn.TextSize = 8
+	Instance.new("UICorner", bgBtn).CornerRadius = UDim.new(0, 4)
+	bgBtn.Activated:Connect(changeBackground)
+
 	mkSect("Visual")
 	setAntiLagVisual=mkToggle("Anti Lag",function(on)
 		if on then enableAntiLag() else disableAntiLag() end
