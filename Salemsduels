@@ -544,6 +544,12 @@ end
 local function stopAntiRagdoll()
 	if Conns.antiRag then Conns.antiRag:Disconnect();Conns.antiRag=nil end
 end
+
+-- ============================================================
+-- INFINITE JUMP (2 MODOS: HOLD y MANUAL)
+-- ============================================================
+local infJumpMode = "hold"  -- "hold" (viejo, mantener pulsado) | "manual" (cada click = 1 salto)
+local manualJumpCooldown = 0
 local holdJumpPressed = false
 local holdJumpActive = false
 local function applyInfJumpBoost(boost)
@@ -552,24 +558,37 @@ local function applyInfJumpBoost(boost)
 	local root=char:FindFirstChild("HumanoidRootPart")
 	if root then root.Velocity=Vector3.new(root.Velocity.X,boost,root.Velocity.Z) end
 end
-UIS.JumpRequest:Connect(function() applyInfJumpBoost(50) end)
+UIS.JumpRequest:Connect(function()
+	if infJumpMode == "hold" then applyInfJumpBoost(50) end
+end)
 UIS.InputBegan:Connect(function(input)
 	if input.UserInputType==Enum.UserInputType.Keyboard and input.KeyCode==Enum.KeyCode.Space and not UIS:GetFocusedTextBox() then
-		holdJumpPressed=true
-		task.delay(0.12,function()
-			if holdJumpPressed then
-				holdJumpActive=true
-				applyInfJumpBoost(50)
+		if infJumpMode == "manual" then
+			local now = tick()
+			if now - manualJumpCooldown > 0.1 then
+				manualJumpCooldown = now
+				applyInfJumpBoost(65)
 			end
-		end)
+		else
+			holdJumpPressed=true
+			task.delay(0.12,function()
+				if holdJumpPressed then
+					holdJumpActive=true
+					applyInfJumpBoost(50)
+				end
+			end)
+		end
 	end
 end)
 UIS.InputEnded:Connect(function(input)
-	if input.UserInputType==Enum.UserInputType.Keyboard and input.KeyCode==Enum.KeyCode.Space then holdJumpPressed=false;holdJumpActive=false end
+	if input.UserInputType==Enum.UserInputType.Keyboard and input.KeyCode==Enum.KeyCode.Space then
+		holdJumpPressed=false;holdJumpActive=false
+	end
 end)
 RunService.Heartbeat:Connect(function()
-	if holdJumpActive then applyInfJumpBoost(50) end
+	if holdJumpActive and infJumpMode == "hold" then applyInfJumpBoost(50) end
 end)
+
 local function startUnwalk()
 	local c=LP.Character;if not c then return end
 	local hum=c:FindFirstChildOfClass("Humanoid")
@@ -1039,7 +1058,7 @@ local function runDrop()
 			speedToggleKey=ks(KB.SpeedToggle),
 			grabRadius=Steal.StealRadius,stealDuration=Steal.StealDuration,
 			antiRagdoll=antiRagdollEnabled,autoStealEnabled=Steal.AutoStealEnabled,
-			infiniteJump=infJumpEnabled,medusaCounter=medusaCounterEnabled,
+			infiniteJump=infJumpEnabled,infJumpMode=infJumpMode,medusaCounter=medusaCounterEnabled,
 			batCounter=batCounterEnabled,
 			carryMode=speedMode,laggerMode=laggerToggled,laggerCarryMode=laggerPhase==2,laggerSpeed=LAGGER_SPEED,laggerCarrySpeed=LAGGER_CARRY_SPEED,
 			autoBat=autoBatEnabled,autoSwing=autoSwingEnabled,
@@ -1212,11 +1231,9 @@ local function runDrop()
 		
 		local main=Instance.new("Frame",gui)
 		main.Size=UDim2.new(0,220,0,320);main.Position=UDim2.new(0,15,0,15)
-		-- PARCHE 2: Frame principal transparente para que solo se vea la imagen
 		main.BackgroundColor3=BG;main.BackgroundTransparency=0.85;main.BorderSizePixel=0;main.ClipsDescendants=false
 		Instance.new("UICorner",main).CornerRadius=UDim.new(0,9)
 		
-		-- PARCHE 1: Imagen opaca al 100% y color blanco puro
 		local bgImage = Instance.new("ImageLabel", main)
 		bgImage.Size = UDim2.new(1, 0, 1, 0)
 		bgImage.Position = UDim2.new(0, 0, 0, 0)
@@ -1228,7 +1245,6 @@ local function runDrop()
 		bgImage.ZIndex = 0
 		Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 9)
 
-		-- PARCHE 7: Capa de brillo sutil sobre la imagen (15% blanco)
 		local bgBrighten = Instance.new("Frame", main)
 		bgBrighten.Name = "BgBrighten"
 		bgBrighten.Size = UDim2.new(1, 0, 1, 0)
@@ -1249,7 +1265,6 @@ local function runDrop()
 		borderStroke.Transparency = 0.2
 		borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-		-- 🔄 CICLADOR DE FONDOS: usa la caché global precargada
 		local function cycleBackground()
 			local current = 0
 			for i = 1, 9 do
@@ -1266,8 +1281,6 @@ local function runDrop()
 			end
 		end
 
-		-- La carga inicial de fondos ya está en marcha desde antes de buildGui.
-		-- Cuando terminen, rellena el bgImage actual.
 		task.spawn(function()
 			while true do
 				local any = false
@@ -1316,7 +1329,6 @@ local function runDrop()
 		end
 		drag(main)
 		local hdr=Instance.new("Frame",main)
-		-- PARCHE 4: Header semitransparente
 		hdr.Size=UDim2.new(1,0,0,32);hdr.BackgroundColor3=BG2;hdr.BackgroundTransparency=0.45;hdr.BorderSizePixel=0
 		Instance.new("UICorner",hdr).CornerRadius=UDim.new(0,9)
 		local ttl=Instance.new("TextLabel",hdr)
@@ -1416,7 +1428,6 @@ local function runDrop()
 			l.TextStrokeTransparency=0.85;l.TextStrokeColor3=Color3.fromRGB(0,0,0)
 		end
 		local function mkRow(h)
-			-- PARCHE 3: Filas semitransparentes para ver la imagen a través
 			local f=Instance.new("Frame",sf);f.Size=UDim2.new(1,0,0,h or 24)
 			f.BackgroundColor3=CARD;f.BackgroundTransparency=0.55;f.BorderSizePixel=0;f.LayoutOrder=LO()
 			Instance.new("UICorner",f).CornerRadius=UDim.new(0,5)
@@ -1524,7 +1535,6 @@ local function runDrop()
 			return sv
 		end
 		local pbFrame=Instance.new("Frame",gui)
-		-- PARCHE 5: Barra de progreso (fondo) semitransparente
 		pbFrame.Size=UDim2.new(0,200,0,38);pbFrame.Position=UDim2.new(0.5,-100,1,-50)
 		pbFrame.BackgroundColor3=BG2;pbFrame.BackgroundTransparency=0.35;pbFrame.BorderSizePixel=0;pbFrame.Active=true;pbFrame.ClipsDescendants=false
 		Instance.new("UICorner",pbFrame).CornerRadius=UDim.new(0,7)
@@ -1537,7 +1547,6 @@ local function runDrop()
 		progressRadLbl.Size=UDim2.new(0,80,0,13);progressRadLbl.Position=UDim2.new(1,-87,0,5)
 		progressRadLbl.BackgroundTransparency=1;progressRadLbl.Text=string.format("R: %.1f",Steal.StealRadius)
 		progressRadLbl.TextColor3=W;progressRadLbl.Font=Enum.Font.GothamBold;progressRadLbl.TextSize=8;progressRadLbl.TextXAlignment=Enum.TextXAlignment.Right
-		-- PARCHE 6: Fondo interior de la barra de progreso semitransparente
 		local pbg=Instance.new("Frame",pbFrame)
 		pbg.Size=UDim2.new(1,-14,0,8);pbg.Position=UDim2.new(0,7,0,23)
 		pbg.BackgroundColor3=Color3.fromRGB(40,20,40);pbg.BackgroundTransparency=0.35;pbg.BorderSizePixel=0
@@ -1598,6 +1607,25 @@ local function runDrop()
 		end
 		mkSect("Misc")
 		setInfJumpVisual=mkToggle("Inf Jump",function(on) infJumpEnabled=on end)
+
+		-- Selector de modo para Inf Jump: Hold (viejo) / Manual (cada click)
+		do
+			local row=mkRow(24);mkLabel(row,"IJ Mode")
+			local modeLbl=Instance.new("TextLabel",row)
+			modeLbl.Size=UDim2.new(0,60,1,0);modeLbl.Position=UDim2.new(1,-64,0,0)
+			modeLbl.BackgroundTransparency=1;modeLbl.Text=infJumpMode=="hold" and "Hold" or "Manual"
+			modeLbl.TextColor3=PURPLE;modeLbl.Font=Enum.Font.GothamBlack;modeLbl.TextSize=8
+			modeLbl.TextXAlignment=Enum.TextXAlignment.Right
+			local clk=Instance.new("TextButton",row);clk.Size=UDim2.new(1,0,1,0);clk.BackgroundTransparency=1;clk.Text="";clk.ZIndex=2
+			clk.Activated:Connect(function()
+				if _anyKeyListening then return end
+				infJumpMode=(infJumpMode=="hold") and "manual" or "hold"
+				modeLbl.Text=(infJumpMode=="hold") and "Hold" or "Manual"
+				holdJumpActive=false;holdJumpPressed=false
+				saveConfig()
+			end)
+		end
+
 		setAntiRagVisual=mkToggle("Anti Rag",function(on) antiRagdollEnabled=on;if on then startAntiRagdoll() else stopAntiRagdoll() end end)
 		setMedusaVisual=mkToggle("Medusa",function(on)
 			medusaCounterEnabled=on
@@ -1607,7 +1635,6 @@ local function runDrop()
 		end)
 		setUnwalkVisual=mkToggle("Unwalk",function(on) unwalkEnabled=on;if on then startUnwalk() else stopUnwalk() end end)
 		
-		-- Botón para cambiar el fondo (en la sección Misc)
 		local bgRow = mkRow(24)
 		mkLabel(bgRow, "Change BG")
 		local bgBtn = Instance.new("TextButton", bgRow)
@@ -1760,6 +1787,7 @@ local function runDrop()
 		if cfg.autoSwing~=nil then autoSwingEnabled=cfg.autoSwing==true end
 		if cfg.mobileButtonsVisible~=nil then mobileButtonsVisible=cfg.mobileButtonsVisible==true end
 		if cfg.mobileButtonsLocked~=nil then mobileButtonsLocked=cfg.mobileButtonsLocked==true end
+		if cfg.infJumpMode=="hold" or cfg.infJumpMode=="manual" then infJumpMode=cfg.infJumpMode end
 	end
 	local function loadConfigState()
 		local cfg=_savedCfg;if not cfg then return end
@@ -1797,7 +1825,6 @@ local function runDrop()
 	buildGui()
 	loadConfigState()
 
-	-- Precarga de fondos (después de crear el GUI para poder rellenar bgImage)
 	task.spawn(function()
 		for i = 1, 9 do
 			local def = REMOTE_BACKGROUNDS[i]
@@ -1806,7 +1833,6 @@ local function runDrop()
 				task.wait(0.05)
 			end
 		end
-		-- Una vez cargados, mostrar el primero en el bgImage si sigue vacío
 		local pg = LP:FindFirstChild("PlayerGui")
 		local sg = pg and pg:FindFirstChild("SalemsDuels")
 		local mainFrame = sg and sg:FindFirstChildOfClass("Frame")
