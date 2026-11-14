@@ -1701,6 +1701,14 @@ local function runDrop()
 			if asset and asset ~= "" then
 				bgImage.Image = asset
 				bgImage.ImageTransparency = 0
+				if mobileButtonsFrame then
+					for _, child in ipairs(mobileButtonsFrame:GetChildren()) do
+						if child:IsA("TextButton") then
+							local img = child:FindFirstChild("BgImage")
+							if img then img.Image = asset end
+						end
+					end
+				end
 			end
 		end
 
@@ -1714,8 +1722,17 @@ local function runDrop()
 					end
 				end
 				if any and (bgImage.Image == "" or bgImage.Image == nil) then
-					bgImage.Image = BACKGROUND_ASSETS[1] or ""
+					local asset = BACKGROUND_ASSETS[1] or ""
+					bgImage.Image = asset
 					bgImage.ImageTransparency = 0
+					if mobileButtonsFrame then
+						for _, child in ipairs(mobileButtonsFrame:GetChildren()) do
+							if child:IsA("TextButton") then
+								local img = child:FindFirstChild("BgImage")
+								if img then img.Image = asset end
+							end
+						end
+					end
 					break
 				end
 				task.wait(0.3)
@@ -1791,8 +1808,11 @@ local function runDrop()
 		local mobileRefs={}
 		local function setMobileButton(id,on)
 			local ref=mobileRefs[id];if not ref then return end
-			TS:Create(ref.btn,TweenInfo.new(0.12),{BackgroundColor3=on and Color3.fromRGB(100,40,100) or Color3.fromRGB(20,5,20),TextColor3=on and PURPLE or W}):Play()
+			TS:Create(ref.btn,TweenInfo.new(0.12),{TextColor3=on and PURPLE or W}):Play()
 			TS:Create(ref.stroke,TweenInfo.new(0.12),{Color=on and PURPLE or Color3.fromRGB(40,20,40)}):Play()
+			if ref.imgBg then
+				TS:Create(ref.imgBg,TweenInfo.new(0.12),{ImageTransparency=on and 0.1 or 0.5}):Play()
+			end
 		end
 		refreshMobileButtons=function()
 			if mobileButtonsFrame then mobileButtonsFrame.Visible=mobileButtonsVisible end
@@ -1809,15 +1829,30 @@ local function runDrop()
 			local col=(order-1)%2
 			local row=math.floor((order-1)/2)
 			btn.Size=UDim2.new(0,64,0,56);btn.Position=UDim2.new(0,col*74,0,row*65)
-			btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BorderSizePixel=0
+			btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BackgroundTransparency=1
+			btn.BorderSizePixel=0
 			btn.Text=txt;btn.TextColor3=W;btn.Font=Enum.Font.GothamBlack;btn.TextSize=10
 			btn.TextWrapped=true;btn.AutoButtonColor=false;btn.ZIndex=26
 			btn.Active=true
+			
+			local imgBg = Instance.new("ImageLabel", btn)
+			imgBg.Name = "BgImage"
+			imgBg.Size = UDim2.new(1,0,1,0)
+			imgBg.BackgroundTransparency = 1
+			imgBg.Image = BACKGROUND_ASSETS[1] or ""
+			imgBg.ImageTransparency = 0.5
+			imgBg.ZIndex = 25
+			Instance.new("UICorner", imgBg).CornerRadius = UDim.new(0, 12)
+
 			Instance.new("UICorner",btn).CornerRadius=UDim.new(0,12)
 			local stroke=Instance.new("UIStroke",btn);stroke.Color=Color3.fromRGB(40,20,40);stroke.Thickness=1.2;stroke.Transparency=0.15
-			mobileRefs[id]={btn=btn,stroke=stroke}
+			mobileRefs[id]={btn=btn,stroke=stroke,imgBg=imgBg}
 			drag(btn)
-			btn.MouseEnter:Connect(function() if not mobileRefs[id].down then TS:Create(btn,TweenInfo.new(0.1),{BackgroundColor3=Color3.fromRGB(30,15,30)}):Play() end end)
+			btn.MouseEnter:Connect(function() 
+				if not mobileRefs[id].down and imgBg then 
+					TS:Create(imgBg,TweenInfo.new(0.1),{ImageTransparency=0.1}):Play() 
+				end 
+			end)
 			btn.MouseLeave:Connect(function() refreshMobileButtons() end)
 			btn.Activated:Connect(function()
 				if _anyKeyListening then return end
