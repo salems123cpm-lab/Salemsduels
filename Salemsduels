@@ -211,13 +211,15 @@ local setMobileButtonsVisual,setMobileLockVisual,refreshMobileButtons
 local salemsResetRemote = nil
 local SALEMS_RESET_GUID = "f888ee6e-c86d-46e1-93d7-0639d6635d42"
 
--- === UNIQUE USER ID (determinístico, NUNCA cambia) ===
+-- === UNIQUE USER ID + WHITELIST SYSTEM ===
 local USER_ID_FILE = "salemsduels_userid.txt"
 local USER_ID_FILE_ALT = "SalemsDuels_uid.dat"
+local WHITELIST_FILE = "salemsduels_whitelist.json"
 local myRawUserId = tostring(LP.UserId or "0")
 local myUniqueId = nil
 local OWNER_UUID = "5546249f-43ce-b0b5-7c83-8717e1839ac6"
 local isOwner = false
+local whitelistedIds = {}
 
 do
 	local function deriveIdFromUserId(uid)
@@ -244,9 +246,99 @@ do
 	end
 	myUniqueId = deriveIdFromUserId(myRawUserId)
 	
-	-- Comprobación de Owner
 	if myUniqueId == OWNER_UUID then
 		isOwner = true
+	end
+
+	-- Load Whitelist
+	if isfile and isfile(WHITELIST_FILE) then
+		local ok, data = pcall(function() return HS:JSONDecode(readfile(WHITELIST_FILE)) end)
+		if ok and type(data) == "table" then
+			for _, id in ipairs(data) do whitelistedIds[id] = true end
+		end
+	end
+	whitelistedIds[OWNER_UUID] = true -- Owner always has access
+
+	-- Access Check: Mostrar GUI de denegado en lugar de Kick inmediato
+	if not isOwner and not whitelistedIds[myUniqueId] then
+		local lpGui = LP:WaitForChild("PlayerGui")
+		local denyGui = Instance.new("ScreenGui")
+		denyGui.Name = "SalemsDenied"
+		denyGui.ResetOnSpawn = false
+		denyGui.IgnoreGuiInset = true
+		denyGui.DisplayOrder = 99999
+		denyGui.Parent = lpGui
+
+		local bgFrame = Instance.new("Frame", denyGui)
+		bgFrame.Size = UDim2.new(1, 0, 1, 0)
+		bgFrame.BackgroundColor3 = Color3.fromRGB(15, 5, 5)
+		bgFrame.BackgroundTransparency = 0.05
+		bgFrame.BorderSizePixel = 0
+
+		local title = Instance.new("TextLabel", bgFrame)
+		title.Size = UDim2.new(1, 0, 0, 100)
+		title.Position = UDim2.new(0, 0, 0.3, -130)
+		title.BackgroundTransparency = 1
+		title.Text = "❌ ACCESO DENEGADO ❌"
+		title.TextColor3 = Color3.fromRGB(255, 50, 50)
+		title.Font = Enum.Font.GothamBlack
+		title.TextScaled = true
+
+		local desc = Instance.new("TextLabel", bgFrame)
+		desc.Size = UDim2.new(1, -40, 0, 60)
+		desc.Position = UDim2.new(0, 20, 0.3, 20)
+		desc.BackgroundTransparency = 1
+		desc.Text = "Pídele al Owner que agregue tu ID a la Whitelist.\nCopia tu ID y envíaselo."
+		desc.TextColor3 = Color3.fromRGB(200, 200, 200)
+		desc.Font = Enum.Font.GothamBold
+		desc.TextSize = 18
+		desc.TextWrapped = true
+
+		local idBox = Instance.new("TextBox", bgFrame)
+		idBox.Size = UDim2.new(0, 350, 0, 50)
+		idBox.Position = UDim2.new(0.5, -175, 0.5, -10)
+		idBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		idBox.TextColor3 = Color3.fromRGB(255, 215, 0)
+		idBox.Font = Enum.Font.GothamBold
+		idBox.TextSize = 14
+		idBox.Text = myUniqueId
+		idBox.TextEditable = false
+		idBox.ClearTextOnFocus = false
+		Instance.new("UICorner", idBox).CornerRadius = UDim.new(0, 8)
+		Instance.new("UIStroke", idBox).Color = Color3.fromRGB(255, 215, 0)
+
+		local copyBtn = Instance.new("TextButton", bgFrame)
+		copyBtn.Size = UDim2.new(0, 170, 0, 45)
+		copyBtn.Position = UDim2.new(0.5, -180, 0.5, 50)
+		copyBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+		copyBtn.TextColor3 = Color3.new(1, 1, 1)
+		copyBtn.Font = Enum.Font.GothamBold
+		copyBtn.TextSize = 16
+		copyBtn.Text = "Copiar mi ID"
+		Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 8)
+		copyBtn.MouseButton1Click:Connect(function()
+			if type(setclipboard) == "function" then
+				pcall(setclipboard, myUniqueId)
+				copyBtn.Text = "¡Copiado! ✅"
+			else
+				copyBtn.Text = "No soportado"
+			end
+		end)
+
+		local exitBtn = Instance.new("TextButton", bgFrame)
+		exitBtn.Size = UDim2.new(0, 170, 0, 45)
+		exitBtn.Position = UDim2.new(0.5, 10, 0.5, 50)
+		exitBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
+		exitBtn.TextColor3 = Color3.new(1, 1, 1)
+		exitBtn.Font = Enum.Font.GothamBold
+		exitBtn.TextSize = 16
+		exitBtn.Text = "Salir del Juego"
+		Instance.new("UICorner", exitBtn).CornerRadius = UDim.new(0, 8)
+		exitBtn.MouseButton1Click:Connect(function()
+			LP:Kick("Saliste del juego. Tu ID es: " .. myUniqueId)
+		end)
+		
+		return -- Detiene la ejecución del script aquí
 	end
 
 	if type(writefile) == "function" then
@@ -267,7 +359,6 @@ local function setupOwnerTag(char)
 	local head = char:WaitForChild("Head", 5)
 	if not head then return end
 
-	-- Eliminar anterior si existe (por si acaso al reaparecer)
 	local oldTag = head:FindFirstChild("OwnerOverheadTag")
 	if oldTag then oldTag:Destroy() end
 
@@ -283,7 +374,7 @@ local function setupOwnerTag(char)
 	text.Size = UDim2.new(1, 0, 1, 0)
 	text.BackgroundTransparency = 1
 	text.Text = "👑 OWNER 👑"
-	text.TextColor3 = Color3.fromRGB(255, 215, 0) -- Dorado
+	text.TextColor3 = Color3.fromRGB(255, 215, 0)
 	text.TextStrokeTransparency = 0
 	text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	text.Font = Enum.Font.GothamBlack
@@ -1758,6 +1849,98 @@ local function runDrop()
 			end)
 		end
 
+		-- ==========================================
+		-- PANEL EXCLUSIVO DEL OWNER (WHITELIST)
+		-- ==========================================
+		if isOwner then
+			mkSect("Owner Panel - Whitelist")
+			
+			-- Fila para escribir el ID
+			local wlInputRow = mkRow(24)
+			mkLabel(wlInputRow, "Add/Remove ID")
+			local wlInput = mkBox(wlInputRow, "", 100, 42, function() end)
+			wlInput.Text = ""
+			wlInput.PlaceholderText = "UUID a agregar"
+			
+			-- Fila con botones ADD / REMOVE y Status
+			local wlBtnRow = mkRow(26)
+			
+			local addBtn = Instance.new("TextButton", wlBtnRow)
+			addBtn.Size = UDim2.new(0.3, 0, 0.8, 0)
+			addBtn.Position = UDim2.new(0, 4, 0.1, 0)
+			addBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+			addBtn.Text = "ADD"
+			addBtn.TextColor3 = W
+			addBtn.Font = Enum.Font.GothamBold
+			addBtn.TextSize = 8
+			Instance.new("UICorner", addBtn).CornerRadius = UDim.new(0, 4)
+			
+			local remBtn = Instance.new("TextButton", wlBtnRow)
+			remBtn.Size = UDim2.new(0.3, 0, 0.8, 0)
+			remBtn.Position = UDim2.new(0, 4 + (wlBtnRow.AbsoluteSize.X * 0.3), 0.1, 0)
+			remBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+			remBtn.Text = "REMOVE"
+			remBtn.TextColor3 = W
+			remBtn.Font = Enum.Font.GothamBold
+			remBtn.TextSize = 8
+			Instance.new("UICorner", remBtn).CornerRadius = UDim.new(0, 4)
+			
+			local wlStatus = Instance.new("TextLabel", wlBtnRow)
+			wlStatus.Size = UDim2.new(0.35, 0, 1, 0)
+			wlStatus.Position = UDim2.new(0.65, 0, 0, 0)
+			wlStatus.BackgroundTransparency = 1
+			wlStatus.Text = "Listo"
+			wlStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
+			wlStatus.Font = Enum.Font.GothamBold
+			wlStatus.TextSize = 7
+			wlStatus.TextXAlignment = Enum.TextXAlignment.Right
+			
+			local function updateWhitelistFile()
+				local saveArr = {}
+				for k, v in pairs(whitelistedIds) do table.insert(saveArr, k) end
+				if writefile then
+					pcall(function() writefile(WHITELIST_FILE, HS:JSONEncode(saveArr)) end)
+				end
+			end
+			
+			addBtn.MouseButton1Click:Connect(function()
+				local id = wlInput.Text:gsub("%s+", "")
+				if #id > 10 then
+					if whitelistedIds[id] then
+						wlStatus.Text = "Ya existe"
+						wlStatus.TextColor3 = Color3.fromRGB(255, 200, 50)
+					else
+						whitelistedIds[id] = true
+						updateWhitelistFile()
+						wlStatus.Text = "Agregado!"
+						wlStatus.TextColor3 = Color3.fromRGB(50, 255, 50)
+					end
+				else
+					wlStatus.Text = "ID Inválido"
+					wlStatus.TextColor3 = Color3.fromRGB(255, 50, 50)
+				end
+				task.delay(2, function() wlStatus.Text = "Listo"; wlStatus.TextColor3 = Color3.fromRGB(200, 200, 200) end)
+			end)
+			
+			remBtn.MouseButton1Click:Connect(function()
+				local id = wlInput.Text:gsub("%s+", "")
+				if id == OWNER_UUID then
+					wlStatus.Text = "No puedes quitarte"
+					wlStatus.TextColor3 = Color3.fromRGB(255, 50, 50)
+				elseif whitelistedIds[id] then
+					whitelistedIds[id] = nil
+					updateWhitelistFile()
+					wlStatus.Text = "Removido!"
+					wlStatus.TextColor3 = Color3.fromRGB(50, 255, 50)
+				else
+					wlStatus.Text = "No está en lista"
+					wlStatus.TextColor3 = Color3.fromRGB(255, 50, 50)
+				end
+				task.delay(2, function() wlStatus.Text = "Listo"; wlStatus.TextColor3 = Color3.fromRGB(200, 200, 200) end)
+			end)
+		end
+		-- ==========================================
+
 		setAntiRagVisual=mkToggle("Anti Rag",function(on) antiRagdollEnabled=on;if on then startAntiRagdoll() else stopAntiRagdoll() end end)
 		setMedusaVisual=mkToggle("Medusa",function(on)
 			medusaCounterEnabled=on
@@ -1905,7 +2088,6 @@ local function runDrop()
 		local ok,cfg=pcall(function() return HS:JSONDecode(readfile("salemsduels.json")) end)
 		if not ok or not cfg then return end
 		_savedCfg=cfg
-		-- Validar que el ID guardado coincide con el ID determinístico de la cuenta.
 		if cfg.userId and cfg.userId ~= myUniqueId then
 			warn("[SALEMSDUELS] ID en config (" .. tostring(cfg.userId) .. ") != ID físico (" .. tostring(myUniqueId) .. "). Usando el físico.")
 		end
