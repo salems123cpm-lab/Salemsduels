@@ -1460,7 +1460,17 @@ local function runDrop()
 	-- Función para crear la ventana flotante del Owner
 	local function createOwnerPanel(parentGui)
 		if parentGui:FindFirstChild("SalemsOwnerPanel") then
-			parentGui.SalemsOwnerPanel.Visible = not parentGui.SalemsOwnerPanel.Visible
+			local existingPanel = parentGui.SalemsOwnerPanel
+			existingPanel.Visible = not existingPanel.Visible
+			
+			local sound = existingPanel:FindFirstChild("OwnerPanelMusic")
+			if sound then
+				if existingPanel.Visible then
+					sound:Play()
+				else
+					sound:Pause()
+				end
+			end
 			return
 		end
 
@@ -1472,6 +1482,14 @@ local function runDrop()
 		panel.BorderSizePixel = 0
 		Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 9)
 		Instance.new("UIStroke", panel).Color = Color3.fromRGB(255, 215, 0)
+
+		-- Música del panel de Owner
+		local panelMusic = Instance.new("Sound", panel)
+		panelMusic.Name = "OwnerPanelMusic"
+		panelMusic.SoundId = "rbxassetid://76503495566299"
+		panelMusic.Volume = 0.5
+		panelMusic.Looped = true
+		pcall(function() panelMusic:Play() end)
 
 		local hdr = Instance.new("Frame", panel)
 		hdr.Size = UDim2.new(1, 0, 0, 30)
