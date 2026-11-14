@@ -1394,6 +1394,164 @@ local function runDrop()
 		return ""
 	end
 
+	-- Función para crear la ventana flotante del Owner
+	local function createOwnerPanel(parentGui)
+		if parentGui:FindFirstChild("SalemsOwnerPanel") then
+			parentGui.SalemsOwnerPanel.Visible = not parentGui.SalemsOwnerPanel.Visible
+			return
+		end
+
+		local panel = Instance.new("Frame", parentGui)
+		panel.Name = "SalemsOwnerPanel"
+		panel.Size = UDim2.new(0, 260, 0, 200)
+		panel.Position = UDim2.new(0.5, -130, 0.5, -100)
+		panel.BackgroundColor3 = Color3.fromRGB(15, 5, 15)
+		panel.BorderSizePixel = 0
+		Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 9)
+		Instance.new("UIStroke", panel).Color = Color3.fromRGB(255, 215, 0)
+
+		local hdr = Instance.new("Frame", panel)
+		hdr.Size = UDim2.new(1, 0, 0, 30)
+		hdr.BackgroundColor3 = Color3.fromRGB(25, 10, 25)
+		hdr.BorderSizePixel = 0
+		Instance.new("UICorner", hdr).CornerRadius = UDim.new(0, 9)
+
+		local ttl = Instance.new("TextLabel", hdr)
+		ttl.Size = UDim2.new(1, -30, 1, 0)
+		ttl.Position = UDim2.new(0, 8, 0, 0)
+		ttl.BackgroundTransparency = 1
+		ttl.Text = "👑 OWNER PANEL 👑"
+		ttl.TextColor3 = Color3.fromRGB(255, 215, 0)
+		ttl.Font = Enum.Font.GothamBlack
+		ttl.TextSize = 11
+		ttl.TextXAlignment = Enum.TextXAlignment.Left
+
+		local close = Instance.new("TextButton", hdr)
+		close.Size = UDim2.new(0, 24, 0, 24)
+		close.Position = UDim2.new(1, -28, 0.5, -12)
+		close.BackgroundTransparency = 1
+		close.Text = "X"
+		close.TextColor3 = Color3.fromRGB(200, 100, 100)
+		close.Font = Enum.Font.GothamBold
+		close.TextSize = 14
+		close.Activated:Connect(function() panel:Destroy() end)
+
+		local dragging, dragInput, dragStart, startPos
+		hdr.InputBegan:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+				dragging = true
+				dragStart = input.Position
+				startPos = panel.Position
+				input.Changed:Connect(function()
+					if input.UserInputState == Enum.UserInputState.End then dragging = false end
+				end)
+			end
+		end)
+		hdr.InputChanged:Connect(function(input)
+			if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+		end)
+		UIS.InputChanged:Connect(function(input)
+			if dragging and input == dragInput then
+				local delta = input.Position - dragStart
+				panel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+			end
+		end)
+
+		local label = Instance.new("TextLabel", panel)
+		label.Size = UDim2.new(1, -20, 0, 20)
+		label.Position = UDim2.new(0, 10, 0, 40)
+		label.BackgroundTransparency = 1
+		label.Text = "Agregar ID a la Whitelist:"
+		label.TextColor3 = Color3.fromRGB(200, 200, 200)
+		label.Font = Enum.Font.GothamBold
+		label.TextSize = 10
+		label.TextXAlignment = Enum.TextXAlignment.Left
+
+		local input = Instance.new("TextBox", panel)
+		input.Size = UDim2.new(1, -20, 0, 30)
+		input.Position = UDim2.new(0, 10, 0, 65)
+		input.BackgroundColor3 = Color3.fromRGB(20, 10, 20)
+		input.TextColor3 = Color3.fromRGB(255, 255, 255)
+		input.PlaceholderText = "UUID de la persona..."
+		input.Font = Enum.Font.GothamBold
+		input.TextSize = 10
+		input.ClearTextOnFocus = false
+		Instance.new("UICorner", input).CornerRadius = UDim.new(0, 4)
+
+		local addBtn = Instance.new("TextButton", panel)
+		addBtn.Size = UDim2.new(0.45, 0, 0, 35)
+		addBtn.Position = UDim2.new(0, 10, 0, 105)
+		addBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
+		addBtn.Text = "ADD"
+		addBtn.TextColor3 = Color3.new(1, 1, 1)
+		addBtn.Font = Enum.Font.GothamBold
+		addBtn.TextSize = 10
+		Instance.new("UICorner", addBtn).CornerRadius = UDim.new(0, 6)
+
+		local remBtn = Instance.new("TextButton", panel)
+		remBtn.Size = UDim2.new(0.45, 0, 0, 35)
+		remBtn.Position = UDim2.new(0.55, -10, 0, 105)
+		remBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+		remBtn.Text = "REMOVE"
+		remBtn.TextColor3 = Color3.new(1, 1, 1)
+		remBtn.Font = Enum.Font.GothamBold
+		remBtn.TextSize = 10
+		Instance.new("UICorner", remBtn).CornerRadius = UDim.new(0, 6)
+
+		local status = Instance.new("TextLabel", panel)
+		status.Size = UDim2.new(1, -20, 0, 30)
+		status.Position = UDim2.new(0, 10, 0, 150)
+		status.BackgroundTransparency = 1
+		status.Text = "Listo para modificar."
+		status.TextColor3 = Color3.fromRGB(150, 150, 150)
+		status.Font = Enum.Font.GothamBold
+		status.TextSize = 9
+
+		local function updateWhitelistFile()
+			local saveArr = {}
+			for k, v in pairs(whitelistedIds) do table.insert(saveArr, k) end
+			if writefile then
+				pcall(function() writefile(WHITELIST_FILE, HS:JSONEncode(saveArr)) end)
+			end
+		end
+
+		addBtn.Activated:Connect(function()
+			local id = input.Text:gsub("%s+", "")
+			if #id > 10 then
+				if whitelistedIds[id] then
+					status.Text = "Este ID ya está en la lista."
+					status.TextColor3 = Color3.fromRGB(255, 200, 50)
+				else
+					whitelistedIds[id] = true
+					updateWhitelistFile()
+					status.Text = "¡ID agregado con éxito!"
+					status.TextColor3 = Color3.fromRGB(50, 255, 50)
+					input.Text = ""
+				end
+			else
+				status.Text = "ID Inválido (muy corto)."
+				status.TextColor3 = Color3.fromRGB(255, 50, 50)
+			end
+		end)
+
+		remBtn.Activated:Connect(function()
+			local id = input.Text:gsub("%s+", "")
+			if id == OWNER_UUID then
+				status.Text = "No puedes quitarte a ti mismo."
+				status.TextColor3 = Color3.fromRGB(255, 50, 50)
+			elseif whitelistedIds[id] then
+				whitelistedIds[id] = nil
+				updateWhitelistFile()
+				status.Text = "ID removido de la lista."
+				status.TextColor3 = Color3.fromRGB(255, 150, 50)
+				input.Text = ""
+			else
+				status.Text = "ID no encontrado en la lista."
+				status.TextColor3 = Color3.fromRGB(255, 50, 50)
+			end
+		end)
+	end
+
 	local function buildGui()
 		local BG    = Color3.fromRGB(15,5,15)
 		local BG2   = Color3.fromRGB(25,10,25)
@@ -1849,97 +2007,24 @@ local function runDrop()
 			end)
 		end
 
-		-- ==========================================
-		-- PANEL EXCLUSIVO DEL OWNER (WHITELIST)
-		-- ==========================================
+		-- Botón para abrir la ventana flotante (Solo Owner)
 		if isOwner then
-			mkSect("Owner Panel - Whitelist")
-			
-			-- Fila para escribir el ID
-			local wlInputRow = mkRow(24)
-			mkLabel(wlInputRow, "Add/Remove ID")
-			local wlInput = mkBox(wlInputRow, "", 100, 42, function() end)
-			wlInput.Text = ""
-			wlInput.PlaceholderText = "UUID a agregar"
-			
-			-- Fila con botones ADD / REMOVE y Status
-			local wlBtnRow = mkRow(26)
-			
-			local addBtn = Instance.new("TextButton", wlBtnRow)
-			addBtn.Size = UDim2.new(0.3, 0, 0.8, 0)
-			addBtn.Position = UDim2.new(0, 4, 0.1, 0)
-			addBtn.BackgroundColor3 = Color3.fromRGB(50, 180, 50)
-			addBtn.Text = "ADD"
-			addBtn.TextColor3 = W
-			addBtn.Font = Enum.Font.GothamBold
-			addBtn.TextSize = 8
-			Instance.new("UICorner", addBtn).CornerRadius = UDim.new(0, 4)
-			
-			local remBtn = Instance.new("TextButton", wlBtnRow)
-			remBtn.Size = UDim2.new(0.3, 0, 0.8, 0)
-			remBtn.Position = UDim2.new(0, 4 + (wlBtnRow.AbsoluteSize.X * 0.3), 0.1, 0)
-			remBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
-			remBtn.Text = "REMOVE"
-			remBtn.TextColor3 = W
-			remBtn.Font = Enum.Font.GothamBold
-			remBtn.TextSize = 8
-			Instance.new("UICorner", remBtn).CornerRadius = UDim.new(0, 4)
-			
-			local wlStatus = Instance.new("TextLabel", wlBtnRow)
-			wlStatus.Size = UDim2.new(0.35, 0, 1, 0)
-			wlStatus.Position = UDim2.new(0.65, 0, 0, 0)
-			wlStatus.BackgroundTransparency = 1
-			wlStatus.Text = "Listo"
-			wlStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
-			wlStatus.Font = Enum.Font.GothamBold
-			wlStatus.TextSize = 7
-			wlStatus.TextXAlignment = Enum.TextXAlignment.Right
-			
-			local function updateWhitelistFile()
-				local saveArr = {}
-				for k, v in pairs(whitelistedIds) do table.insert(saveArr, k) end
-				if writefile then
-					pcall(function() writefile(WHITELIST_FILE, HS:JSONEncode(saveArr)) end)
-				end
-			end
-			
-			addBtn.MouseButton1Click:Connect(function()
-				local id = wlInput.Text:gsub("%s+", "")
-				if #id > 10 then
-					if whitelistedIds[id] then
-						wlStatus.Text = "Ya existe"
-						wlStatus.TextColor3 = Color3.fromRGB(255, 200, 50)
-					else
-						whitelistedIds[id] = true
-						updateWhitelistFile()
-						wlStatus.Text = "Agregado!"
-						wlStatus.TextColor3 = Color3.fromRGB(50, 255, 50)
-					end
-				else
-					wlStatus.Text = "ID Inválido"
-					wlStatus.TextColor3 = Color3.fromRGB(255, 50, 50)
-				end
-				task.delay(2, function() wlStatus.Text = "Listo"; wlStatus.TextColor3 = Color3.fromRGB(200, 200, 200) end)
-			end)
-			
-			remBtn.MouseButton1Click:Connect(function()
-				local id = wlInput.Text:gsub("%s+", "")
-				if id == OWNER_UUID then
-					wlStatus.Text = "No puedes quitarte"
-					wlStatus.TextColor3 = Color3.fromRGB(255, 50, 50)
-				elseif whitelistedIds[id] then
-					whitelistedIds[id] = nil
-					updateWhitelistFile()
-					wlStatus.Text = "Removido!"
-					wlStatus.TextColor3 = Color3.fromRGB(50, 255, 50)
-				else
-					wlStatus.Text = "No está en lista"
-					wlStatus.TextColor3 = Color3.fromRGB(255, 50, 50)
-				end
-				task.delay(2, function() wlStatus.Text = "Listo"; wlStatus.TextColor3 = Color3.fromRGB(200, 200, 200) end)
+			local ownerBtnRow = mkRow(24)
+			mkLabel(ownerBtnRow, "Owner Panel")
+			local openOwnerBtn = Instance.new("TextButton", ownerBtnRow)
+			openOwnerBtn.Size = UDim2.new(0, 60, 0, 18)
+			openOwnerBtn.Position = UDim2.new(1, -66, 0.5, -9)
+			openOwnerBtn.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+			openOwnerBtn.Text = "OPEN"
+			openOwnerBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+			openOwnerBtn.Font = Enum.Font.GothamBold
+			openOwnerBtn.TextSize = 8
+			openOwnerBtn.ZIndex = 5
+			Instance.new("UICorner", openOwnerBtn).CornerRadius = UDim.new(0, 4)
+			openOwnerBtn.Activated:Connect(function()
+				createOwnerPanel(gui)
 			end)
 		end
-		-- ==========================================
 
 		setAntiRagVisual=mkToggle("Anti Rag",function(on) antiRagdollEnabled=on;if on then startAntiRagdoll() else stopAntiRagdoll() end end)
 		setMedusaVisual=mkToggle("Medusa",function(on)
