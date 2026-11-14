@@ -260,6 +260,46 @@ do
 	print("[SALEMSDUELS] User ID: " .. myUniqueId .. " (Roblox: " .. myRawUserId .. ") | Owner: " .. tostring(isOwner))
 end
 
+-- === CARTEL DE OWNER ENCIMA DEL PERSONAJE ===
+local function setupOwnerTag(char)
+	if not isOwner then return end
+	if not char then return end
+	local head = char:WaitForChild("Head", 5)
+	if not head then return end
+
+	-- Eliminar anterior si existe (por si acaso al reaparecer)
+	local oldTag = head:FindFirstChild("OwnerOverheadTag")
+	if oldTag then oldTag:Destroy() end
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "OwnerOverheadTag"
+	billboard.Size = UDim2.new(0, 160, 0, 40)
+	billboard.StudsOffset = Vector3.new(0, 2.8, 0)
+	billboard.AlwaysOnTop = true
+	billboard.LightInfluence = 0
+	billboard.Parent = head
+
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.new(1, 0, 1, 0)
+	text.BackgroundTransparency = 1
+	text.Text = "👑 OWNER 👑"
+	text.TextColor3 = Color3.fromRGB(255, 215, 0) -- Dorado
+	text.TextStrokeTransparency = 0
+	text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	text.Font = Enum.Font.GothamBlack
+	text.TextScaled = true
+	text.Parent = billboard
+end
+
+if isOwner then
+	if LP.Character then task.spawn(function() setupOwnerTag(LP.Character) end) end
+	LP.CharacterAdded:Connect(function(char)
+		task.wait(0.5)
+		setupOwnerTag(char)
+	end)
+end
+-- ============================================
+
 task.spawn(function()
 	local BLACKLIST_URL="https://pastebin.com/2zLUXv2K"
 	pcall(function() HS.HttpEnabled=true end)
@@ -1679,34 +1719,17 @@ local function runDrop()
 			end)
 		end
 
-		-- Fila: mostrar ID único + botón copiar + Etiqueta OWNER si corresponde
+		-- Fila: mostrar ID único + botón copiar (normal para todos)
 		do
-			local idRow = mkRow(isOwner and 28 or 24)
-			local labelTxt = isOwner and "👑 OWNER 👑" or "My ID"
+			local idRow = mkRow(24)
+			mkLabel(idRow, "My ID")
 			
-			local idLabel = Instance.new("TextLabel", idRow)
-			idLabel.Size = UDim2.new(0.58, 0, 1, 0)
-			idLabel.Position = UDim2.new(0, 6, 0, 0)
-			idLabel.BackgroundTransparency = 1
-			idLabel.Text = labelTxt
-			idLabel.TextColor3 = isOwner and Color3.fromRGB(255, 215, 0) or W
-			idLabel.Font = isOwner and Enum.Font.GothamBlack or Enum.Font.GothamBold
-			idLabel.TextSize = isOwner and 9 or 8
-			idLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-			if isOwner then
-				local stroke = Instance.new("UIStroke", idRow)
-				stroke.Color = Color3.fromRGB(255, 215, 0)
-				stroke.Thickness = 1.5
-				stroke.Transparency = 0.2
-			end
-
 			local idDisplay = Instance.new("TextLabel", idRow)
 			idDisplay.Size = UDim2.new(0, 82, 1, 0)
 			idDisplay.Position = UDim2.new(1, -104, 0, 0)
 			idDisplay.BackgroundTransparency = 1
 			idDisplay.Text = string.sub(myUniqueId, 1, 8) .. "…" .. string.sub(myUniqueId, -4)
-			idDisplay.TextColor3 = isOwner and Color3.fromRGB(255, 215, 0) or PURPLE
+			idDisplay.TextColor3 = PURPLE
 			idDisplay.Font = Enum.Font.GothamBold
 			idDisplay.TextSize = 7
 			idDisplay.TextXAlignment = Enum.TextXAlignment.Right
@@ -1715,10 +1738,10 @@ local function runDrop()
 			local copyBtn = Instance.new("TextButton", idRow)
 			copyBtn.Size = UDim2.new(0, 20, 0, 18)
 			copyBtn.Position = UDim2.new(1, -22, 0.5, -9)
-			copyBtn.BackgroundColor3 = isOwner and Color3.fromRGB(80, 60, 10) or INP
+			copyBtn.BackgroundColor3 = INP
 			copyBtn.BorderSizePixel = 0
 			copyBtn.Text = "C"
-			copyBtn.TextColor3 = isOwner and Color3.fromRGB(255, 215, 0) or W
+			copyBtn.TextColor3 = W
 			copyBtn.Font = Enum.Font.GothamBold
 			copyBtn.TextSize = 9
 			copyBtn.ZIndex = 5
