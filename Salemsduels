@@ -1811,7 +1811,8 @@ local function runDrop()
 			TS:Create(ref.btn,TweenInfo.new(0.12),{TextColor3=on and PURPLE or W}):Play()
 			TS:Create(ref.stroke,TweenInfo.new(0.12),{Color=on and PURPLE or Color3.fromRGB(40,20,40)}):Play()
 			if ref.imgBg then
-				TS:Create(ref.imgBg,TweenInfo.new(0.12),{ImageTransparency=on and 0.1 or 0.5}):Play()
+				-- Aquí se ajusta el tono: 0 (máxima claridad) si está encendido, 0.25 si está apagado
+				TS:Create(ref.imgBg,TweenInfo.new(0.12),{ImageTransparency=on and 0 or 0.25, ImageColor3 = on and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)}):Play()
 			end
 		end
 		refreshMobileButtons=function()
@@ -1834,13 +1835,16 @@ local function runDrop()
 			btn.Text=txt;btn.TextColor3=W;btn.Font=Enum.Font.GothamBlack;btn.TextSize=10
 			btn.TextWrapped=true;btn.AutoButtonColor=false;btn.ZIndex=26
 			btn.Active=true
+			btn.TextStrokeTransparency = 0.5
+			btn.TextStrokeColor3 = Color3.fromRGB(0,0,0)
 			
 			local imgBg = Instance.new("ImageLabel", btn)
 			imgBg.Name = "BgImage"
 			imgBg.Size = UDim2.new(1,0,1,0)
 			imgBg.BackgroundTransparency = 1
 			imgBg.Image = BACKGROUND_ASSETS[1] or ""
-			imgBg.ImageTransparency = 0.5
+			imgBg.ImageTransparency = 0.25
+			imgBg.ImageColor3 = Color3.fromRGB(200, 200, 200)
 			imgBg.ZIndex = 25
 			Instance.new("UICorner", imgBg).CornerRadius = UDim.new(0, 12)
 
@@ -1850,7 +1854,7 @@ local function runDrop()
 			drag(btn)
 			btn.MouseEnter:Connect(function() 
 				if not mobileRefs[id].down and imgBg then 
-					TS:Create(imgBg,TweenInfo.new(0.1),{ImageTransparency=0.1}):Play() 
+					TS:Create(imgBg,TweenInfo.new(0.1),{ImageTransparency=0, ImageColor3 = Color3.fromRGB(255,255,255)}):Play() 
 				end 
 			end)
 			btn.MouseLeave:Connect(function() refreshMobileButtons() end)
