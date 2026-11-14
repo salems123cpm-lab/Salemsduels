@@ -259,7 +259,7 @@ do
 	end
 	whitelistedIds[OWNER_UUID] = true -- Owner always has access
 
-	-- Access Check: Mostrar GUI de denegado en lugar de Kick inmediato
+	-- Access Check
 	if not isOwner and not whitelistedIds[myUniqueId] then
 		local lpGui = LP:WaitForChild("PlayerGui")
 		local denyGui = Instance.new("ScreenGui")
@@ -339,6 +339,69 @@ do
 		end)
 		
 		return -- Detiene la ejecución del script aquí
+	elseif not isOwner and whitelistedIds[myUniqueId] then
+		-- MOSTRAR INTRODUCCIÓN DE BIENVENIDA PARA WHITELIST
+		task.spawn(function()
+			local lpGui = LP:WaitForChild("PlayerGui")
+			local welcomeGui = Instance.new("ScreenGui")
+			welcomeGui.Name = "SalemsWelcome"
+			welcomeGui.ResetOnSpawn = false
+			welcomeGui.IgnoreGuiInset = true
+			welcomeGui.DisplayOrder = 99998
+			welcomeGui.Parent = lpGui
+
+			local frame = Instance.new("Frame", welcomeGui)
+			frame.Size = UDim2.new(0, 320, 0, 110)
+			frame.Position = UDim2.new(0.5, -160, 0.5, -55)
+			frame.BackgroundColor3 = Color3.fromRGB(15, 5, 15)
+			frame.BackgroundTransparency = 0.1
+			frame.BorderSizePixel = 0
+			Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+			
+			local stroke = Instance.new("UIStroke", frame)
+			stroke.Color = Color3.fromRGB(50, 255, 50)
+			stroke.Thickness = 2
+
+			local title = Instance.new("TextLabel", frame)
+			title.Size = UDim2.new(1, 0, 0, 55)
+			title.BackgroundTransparency = 1
+			title.Text = "✅ ACCESO CONCEDIDO ✅"
+			title.TextColor3 = Color3.fromRGB(50, 255, 50)
+			title.Font = Enum.Font.GothamBlack
+			title.TextSize = 22
+
+			local desc = Instance.new("TextLabel", frame)
+			desc.Size = UDim2.new(1, 0, 0, 30)
+			desc.Position = UDim2.new(0, 0, 0, 55)
+			desc.BackgroundTransparency = 1
+			desc.Text = "Bienvenido a SalemsDuels (Whitelisted)"
+			desc.TextColor3 = Color3.fromRGB(200, 200, 200)
+			desc.Font = Enum.Font.GothamBold
+			desc.TextSize = 12
+
+			-- Animación de entrada
+			frame.BackgroundTransparency = 1
+			title.TextTransparency = 1
+			desc.TextTransparency = 1
+			stroke.Transparency = 1
+			frame.Position = UDim2.new(0.5, -160, 0.4, -55)
+
+			TS:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {BackgroundTransparency = 0.1, Position = UDim2.new(0.5, -160, 0.5, -55)}):Play()
+			TS:Create(title, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+			TS:Create(desc, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
+			TS:Create(stroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
+
+			task.wait(3) -- Mantener en pantalla
+
+			-- Animación de salida
+			TS:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1, Position = UDim2.new(0.5, -160, 0.4, -55)}):Play()
+			TS:Create(title, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+			TS:Create(desc, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
+			TS:Create(stroke, TweenInfo.new(0.5), {Transparency = 1}):Play()
+			
+			task.wait(0.6)
+			welcomeGui:Destroy()
+		end)
 	end
 
 	if type(writefile) == "function" then
