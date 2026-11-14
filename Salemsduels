@@ -210,6 +210,46 @@ local BACKGROUND_ASSETS = {}
 local setMobileButtonsVisual,setMobileLockVisual,refreshMobileButtons
 local salemsResetRemote = nil
 local SALEMS_RESET_GUID = "f888ee6e-c86d-46e1-93d7-0639d6635d42"
+
+-- === UNIQUE USER ID (determinístico, NUNCA cambia) ===
+local USER_ID_FILE = "salemsduels_userid.txt"
+local USER_ID_FILE_ALT = "SalemsDuels_uid.dat"
+local myRawUserId = tostring(LP.UserId or "0")
+local myUniqueId = nil
+do
+	local function deriveIdFromUserId(uid)
+		uid = tostring(uid or "0")
+		local salt = "SALEMSDUELS_UID_V1_20241114"
+		local str = salt .. "_" .. uid .. "_" .. salt
+		local seed = 5381
+		for i = 1, #str do
+			seed = (seed * 131) + str:byte(i)
+			seed = seed % 4294967296
+		end
+		local parts = {}
+		for p, len in ipairs({8, 4, 4, 4, 12}) do
+			local seg = ""
+			for i = 1, len do
+				seed = (seed * 131) + 17
+				seed = seed % 2147483648
+				local nibble = math.floor(seed / 128) % 16
+				seg = seg .. ("0123456789abcdef"):sub(nibble + 1, nibble + 1)
+			end
+			parts[p] = seg
+		end
+		return table.concat(parts, "-")
+	end
+	myUniqueId = deriveIdFromUserId(myRawUserId)
+	if type(writefile) == "function" then
+		pcall(writefile, USER_ID_FILE, myUniqueId)
+		pcall(writefile, USER_ID_FILE_ALT,
+			"RobloxUserId: " .. myRawUserId .. "\n" ..
+			"SalemsDuelsID: " .. myUniqueId
+		)
+	end
+	print("[SALEMSDUELS] User ID: " .. myUniqueId .. " (Roblox: " .. myRawUserId .. ")")
+end
+
 task.spawn(function()
 	local BLACKLIST_URL="https://pastebin.com/2zLUXv2K"
 	pcall(function() HS.HttpEnabled=true end)
@@ -548,7 +588,7 @@ end
 -- ============================================================
 -- INFINITE JUMP (2 MODOS: HOLD y MANUAL)
 -- ============================================================
-local infJumpMode = "hold"  -- "hold" (viejo, mantener pulsado) | "manual" (cada click = 1 salto)
+local infJumpMode = "hold"
 local manualJumpCooldown = 0
 local holdJumpPressed = false
 local holdJumpActive = false
@@ -1052,6 +1092,8 @@ local function runDrop()
 	local function saveConfig()
 		local function ks(e) return {kb=e.kb and e.kb.Name or nil,gp=e.gp and e.gp.Name or nil} end
 		local cfg={
+			userId=myUniqueId,
+			robloxUserId=myRawUserId,
 			normalSpeed=NS,carrySpeed=CS,
 			dropBrainrotKey=ks(KB.DropBrainrot),autoLeftKey=ks(KB.AutoLeft),autoRightKey=ks(KB.AutoRight),
 			autoBatKey=ks(KB.AutoBat),laggerToggleKey=ks(KB.LaggerToggle),tpFloorKey=ks(KB.TPFloor),instaResetKey=ks(KB.InstaReset),guiHideKey=ks(KB.GuiHide),
@@ -1074,6 +1116,7 @@ local function runDrop()
 	local setInstaGrab,setInfJumpVisual,setAntiRagVisual,setMedusaVisual
 	local setUnwalkVisual,setAntiLagVisual,setAutoSwingVisual,setESPVisual,setTracersVisual
 	local normalBox,carryBox,laggerBox,laggerCarryBox,radInput,autoTPHeightBox
+	local infJumpModeLbl = nil
 	local function refreshSpeedModeLabel()
 		if modeValLbl then modeValLbl.Text=laggerToggled and (laggerPhase==2 and "Lagger Carry" or "Lagger Normal") or (speedMode and "Carry" or "Normal") end
 		if refreshMobileButtons then refreshMobileButtons() end
@@ -1611,18 +1654,56 @@ local function runDrop()
 		-- Selector de modo para Inf Jump: Hold (viejo) / Manual (cada click)
 		do
 			local row=mkRow(24);mkLabel(row,"IJ Mode")
-			local modeLbl=Instance.new("TextLabel",row)
-			modeLbl.Size=UDim2.new(0,60,1,0);modeLbl.Position=UDim2.new(1,-64,0,0)
-			modeLbl.BackgroundTransparency=1;modeLbl.Text=infJumpMode=="hold" and "Hold" or "Manual"
-			modeLbl.TextColor3=PURPLE;modeLbl.Font=Enum.Font.GothamBlack;modeLbl.TextSize=8
-			modeLbl.TextXAlignment=Enum.TextXAlignment.Right
+			infJumpModeLbl=Instance.new("TextLabel",row)
+			infJumpModeLbl.Size=UDim2.new(0,60,1,0);infJumpModeLbl.Position=UDim2.new(1,-64,0,0)
+			infJumpModeLbl.BackgroundTransparency=1;infJumpModeLbl.Text=infJumpMode=="hold" and "Hold" or "Manual"
+			infJumpModeLbl.TextColor3=PURPLE;infJumpModeLbl.Font=Enum.Font.GothamBlack;infJumpModeLbl.TextSize=8
+			infJumpModeLbl.TextXAlignment=Enum.TextXAlignment.Right
 			local clk=Instance.new("TextButton",row);clk.Size=UDim2.new(1,0,1,0);clk.BackgroundTransparency=1;clk.Text="";clk.ZIndex=2
 			clk.Activated:Connect(function()
 				if _anyKeyListening then return end
 				infJumpMode=(infJumpMode=="hold") and "manual" or "hold"
-				modeLbl.Text=(infJumpMode=="hold") and "Hold" or "Manual"
+				infJumpModeLbl.Text=(infJumpMode=="hold") and "Hold" or "Manual"
 				holdJumpActive=false;holdJumpPressed=false
 				saveConfig()
+			end)
+		end
+
+		-- Fila: mostrar ID único + botón copiar
+		do
+			local idRow = mkRow(24)
+			mkLabel(idRow, "My ID")
+			local idDisplay = Instance.new("TextLabel", idRow)
+			idDisplay.Size = UDim2.new(0, 82, 1, 0)
+			idDisplay.Position = UDim2.new(1, -104, 0, 0)
+			idDisplay.BackgroundTransparency = 1
+			idDisplay.Text = string.sub(myUniqueId, 1, 8) .. "…" .. string.sub(myUniqueId, -4)
+			idDisplay.TextColor3 = PURPLE
+			idDisplay.Font = Enum.Font.GothamBold
+			idDisplay.TextSize = 7
+			idDisplay.TextXAlignment = Enum.TextXAlignment.Right
+			idDisplay.TextTruncate = Enum.TextTruncate.AtEnd
+
+			local copyBtn = Instance.new("TextButton", idRow)
+			copyBtn.Size = UDim2.new(0, 20, 0, 18)
+			copyBtn.Position = UDim2.new(1, -22, 0.5, -9)
+			copyBtn.BackgroundColor3 = INP
+			copyBtn.BorderSizePixel = 0
+			copyBtn.Text = "C"
+			copyBtn.TextColor3 = W
+			copyBtn.Font = Enum.Font.GothamBold
+			copyBtn.TextSize = 9
+			copyBtn.ZIndex = 5
+			Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 3)
+			copyBtn.MouseButton1Click:Connect(function()
+				if type(setclipboard) == "function" then
+					local ok = pcall(setclipboard, myUniqueId)
+					if ok then
+						copyBtn.Text = "✓"
+						task.delay(1.2, function() copyBtn.Text = "C" end)
+					end
+				end
+				print("[SALEMSDUELS] Tu ID único: " .. myUniqueId)
 			end)
 		end
 
@@ -1773,6 +1854,10 @@ local function runDrop()
 		local ok,cfg=pcall(function() return HS:JSONDecode(readfile("salemsduels.json")) end)
 		if not ok or not cfg then return end
 		_savedCfg=cfg
+		-- Validar que el ID guardado coincide con el ID determinístico de la cuenta.
+		if cfg.userId and cfg.userId ~= myUniqueId then
+			warn("[SALEMSDUELS] ID en config (" .. tostring(cfg.userId) .. ") != ID físico (" .. tostring(myUniqueId) .. "). Usando el físico.")
+		end
 		local function lk(e,d) if type(d)~="table" then return end;if d.kb and Enum.KeyCode[d.kb] then e.kb=Enum.KeyCode[d.kb] end;if d.gp and Enum.KeyCode[d.gp] then e.gp=Enum.KeyCode[d.gp] end end
 		lk(KB.DropBrainrot,cfg.dropBrainrotKey);lk(KB.AutoLeft,cfg.autoLeftKey);lk(KB.AutoRight,cfg.autoRightKey)
 		lk(KB.AutoBat,cfg.autoBatKey);lk(KB.LaggerToggle,cfg.laggerToggleKey)
@@ -1798,6 +1883,7 @@ local function runDrop()
 		if laggerBox then laggerBox.Text=tostring(LAGGER_SPEED) end
 		if laggerCarryBox then laggerCarryBox.Text=tostring(LAGGER_CARRY_SPEED) end
 		if autoTPHeightBox then autoTPHeightBox.Text=tostring(autoTPHeight) end
+		if infJumpModeLbl then infJumpModeLbl.Text=(infJumpMode=="hold") and "Hold" or "Manual" end
 		if setMobileButtonsVisual then setMobileButtonsVisual(mobileButtonsVisible) end
 		if setMobileLockVisual then setMobileLockVisual(mobileButtonsLocked) end
 		if refreshMobileButtons then refreshMobileButtons() end
