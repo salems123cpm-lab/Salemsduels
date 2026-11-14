@@ -198,6 +198,15 @@ local setAutoTPVisual = nil
 local mobileButtonsVisible = true
 local mobileButtonsLocked = false
 local mobileButtonsFrame = nil
+-- ESP & Tracers state
+local espEnabled = false
+local tracersEnabled = false
+local espHighlights = {}
+local espConns = {}
+local tracerDrawings = {}
+local tracerConn = nil
+-- Backgrounds cache (preloaded)
+local BACKGROUND_ASSETS = {}
 local setMobileButtonsVisual,setMobileLockVisual,refreshMobileButtons
 local salemsResetRemote = nil
 local SALEMS_RESET_GUID = "f888ee6e-c86d-46e1-93d7-0639d6635d42"
@@ -662,6 +671,117 @@ local function runDrop()
 		if stretchRezConn then stretchRezConn:Disconnect();stretchRezConn=nil end
 		workspace.CurrentCamera.FieldOfView=70
 	end
+	-- === ESP & TRACERS ===
+	local function createESPHighlight(player)
+		if player==LP then return end
+		local char=player.Character;if not char then return end
+		local old=espHighlights[player]
+		if old then
+			pcall(function() old:Destroy() end)
+			espHighlights[player]=nil
+		end
+		local h=Instance.new("Highlight")
+		h.Name="SalemsESP"
+		h.FillColor=Color3.fromRGB(255,40,40)
+		h.FillTransparency=0.55
+		h.OutlineColor=Color3.fromRGB(255,255,255)
+		h.OutlineTransparency=0
+		h.DepthMode=Enum.HighlightDepthMode.AlwaysOnTop
+		h.Adornee=char
+		h.Parent=char
+		espHighlights[player]=h
+	end
+	local function destroyESPHighlight(player)
+		local h=espHighlights[player]
+		if h and h.Parent then pcall(function() h:Destroy() end) end
+		espHighlights[player]=nil
+	end
+	local function startESP()
+		if espEnabled then return end
+		espEnabled=true
+		local function watch(p)
+			if p==LP then return end
+			createESPHighlight(p)
+			table.insert(espConns,p.CharacterAdded:Connect(function()
+				task.wait(0.2)
+				if espEnabled then createESPHighlight(p) end
+			end))
+		end
+		for _,p in ipairs(Players:GetPlayers()) do watch(p) end
+		table.insert(espConns,Players.PlayerAdded:Connect(function(p)
+			if espEnabled then watch(p) end
+		end))
+		table.insert(espConns,Players.PlayerRemoving:Connect(function(p)
+			destroyESPHighlight(p)
+		end))
+	end
+	local function stopESP()
+		espEnabled=false
+		for _,c in ipairs(espConns) do pcall(function() c:Disconnect() end) end
+		espConns={}
+		for p,h in pairs(espHighlights) do
+			if h and h.Parent then pcall(function() h:Destroy() end) end
+		end
+		espHighlights={}
+	end
+	local function startTracers()
+		tracersEnabled=true
+		if not Drawing then return end
+		if tracerConn then return end
+		tracerConn=RunService.RenderStepped:Connect(function()
+			if not tracersEnabled then return end
+			local cam=workspace.CurrentCamera;if not cam then return end
+			local vps=cam.ViewportSize
+			local from=Vector2.new(vps.X/2,vps.Y)
+			for _,p in ipairs(Players:GetPlayers()) do
+				if p~=LP then
+					local char=p.Character
+					local hrp=char and char:FindFirstChild("HumanoidRootPart")
+					local hum=char and char:FindFirstChildOfClass("Humanoid")
+					if hrp and hum and hum.Health>0 then
+						local line=tracerDrawings[p]
+						if not line then
+							local ok,obj=pcall(function() return Drawing.new("Line") end)
+							if ok and obj then
+								line=obj
+								line.Thickness=1.5
+								line.Color=Color3.fromRGB(255,40,40)
+								line.Transparency=1
+								tracerDrawings[p]=line
+							end
+						end
+						if line then
+							local sp,onScreen=cam:WorldToViewportPoint(hrp.Position)
+							if onScreen then
+								line.From=from
+								line.To=Vector2.new(sp.X,sp.Y)
+								line.Visible=true
+							else
+								line.Visible=false
+							end
+						end
+					else
+						local line=tracerDrawings[p]
+						if line then line.Visible=false end
+					end
+				end
+			end
+			for p,line in pairs(tracerDrawings) do
+				if not p.Parent then
+					pcall(function() line:Remove() end)
+					tracerDrawings[p]=nil
+				end
+			end
+		end)
+	end
+	local function stopTracers()
+		tracersEnabled=false
+		if tracerConn then tracerConn:Disconnect();tracerConn=nil end
+		for _,line in pairs(tracerDrawings) do
+			pcall(function() line:Remove() end)
+		end
+		tracerDrawings={}
+	end
 	local function applyAntiLagDerender(obj)
 		pcall(function()
 			if obj:IsA("Accessory") or obj:IsA("Hat") then obj:Destroy()
@@ -925,6 +1045,7 @@ local function runDrop()
 			autoBat=autoBatEnabled,autoSwing=autoSwingEnabled,
 			unwalkEnabled=unwalkEnabled,
 			antiLag=antiLagEnabled,stretchRez=stretchRezEnabled,
+			esp=espEnabled,tracers=tracersEnabled,
 			autoTPEnabled=autoTPEnabled,autoTPHeight=autoTPHeight,
 			mobileButtonsVisible=mobileButtonsVisible,mobileButtonsLocked=mobileButtonsLocked
 		}
@@ -932,7 +1053,7 @@ local function runDrop()
 	end
 	task.spawn(function() while task.wait(5) do saveConfig() end end)
 	local setInstaGrab,setInfJumpVisual,setAntiRagVisual,setMedusaVisual
-	local setUnwalkVisual,setAntiLagVisual,setAutoSwingVisual
+	local setUnwalkVisual,setAntiLagVisual,setAutoSwingVisual,setESPVisual,setTracersVisual
 	local normalBox,carryBox,laggerBox,laggerCarryBox,radInput,autoTPHeightBox
 	local function refreshSpeedModeLabel()
 		if modeValLbl then modeValLbl.Text=laggerToggled and (laggerPhase==2 and "Lagger Carry" or "Lagger Normal") or (speedMode and "Carry" or "Normal") end
@@ -994,7 +1115,82 @@ local function runDrop()
 		if refreshMobileButtons then refreshMobileButtons() end
 		saveConfig()
 	end
-	
+
+	-- ============================================================
+	-- SISTEMA DE FONDOS MEJORADO (estilo Glazier)
+	-- ============================================================
+	local REMOTE_BACKGROUNDS = {
+		[1] = {index = 1, url = "https://files.catbox.moe/ca5tsq.jpg",     file = "SalemsBg_1_v2.jpg"},
+		[2] = {index = 2, url = "https://files.catbox.moe/mwjblg.jpg",     file = "SalemsBg_2_v2.jpg"},
+		[3] = {index = 3, url = "https://files.catbox.moe/p73wuq.jpg",     file = "SalemsBg_3_v2.jpg"},
+		[4] = {index = 4, url = "https://files.catbox.moe/xyd0el.jpeg",    file = "SalemsBg_4_v2.jpeg"},
+		[5] = {index = 5, url = "https://files.catbox.moe/udfl8h.jpg",     file = "SalemsBg_5_v2.jpg"},
+		[6] = {index = 6, url = "https://files.catbox.moe/11zcwr.png",     file = "SalemsBg_6_v2.png"},
+		[7] = {index = 7, url = "https://files.catbox.moe/5s5xzv.jpg",     file = "SalemsBg_7_v2.jpg"},
+		[8] = {index = 8, url = "https://files.catbox.moe/kwm6gk.jpg",     file = "SalemsBg_8_v2.jpg"},
+		[9] = {index = 9, url = "https://files.catbox.moe/ivg1h1.png",     file = "SalemsBg_9_v2.png"},
+	}
+	local function isValidImage(data)
+		if type(data) ~= "string" or #data < 32 then return false end
+		local jpeg = data:sub(1,3) == string.char(0xFF,0xD8,0xFF)
+		local png = data:sub(1,8) == string.char(0x89,0x50,0x4E,0x47,0x0D,0x0A,0x1A,0x0A)
+		local ftyp = data:sub(5,8) == "ftyp"
+		return jpeg or png or ftyp
+	end
+	local function getRequestFunction()
+		local candidates = {
+			rawget(_G, "request"),
+			rawget(_G, "http_request"),
+			(type(syn) == "table" and syn.request),
+			(type(fluxus) == "table" and fluxus.request),
+			(type(krnl) == "table" and krnl.request),
+			(type(http) == "table" and http.request),
+		}
+		for _, fn in ipairs(candidates) do
+			if type(fn) == "function" then return fn end
+		end
+		return nil
+	end
+	local function downloadImage(url)
+		local req = getRequestFunction()
+		if req then
+			local okReq, response = pcall(req, {Url = url, URL = url, Method = "GET"})
+			if okReq and type(response) == "table" then
+				local body = response.Body or response.body
+				if isValidImage(body) then return body end
+			end
+		end
+		local okHttp, body = pcall(function() return game:HttpGet(url) end)
+		if okHttp and isValidImage(body) then return body end
+		return nil
+	end
+	local function loadRemoteBackground(def)
+		local loader = (type(getcustomasset) == "function" and getcustomasset)
+			or (type(getsynasset) == "function" and getsynasset)
+		if not loader or type(writefile) ~= "function" then
+			warn("[SALEMSDUELS] Tu executor no tiene writefile + getcustomasset/getsynasset.")
+			return ""
+		end
+		local filename = def.file
+		local ok, result = pcall(function()
+			local existing = nil
+			if type(isfile) == "function" and isfile(filename) and type(readfile) == "function" then
+				local okRead, data = pcall(readfile, filename)
+				if okRead and isValidImage(data) then existing = data end
+				if not existing and type(delfile) == "function" then pcall(delfile, filename) end
+			end
+			if not existing then
+				local body = downloadImage(def.url)
+				if not body then error("No se recibió una imagen válida desde Catbox") end
+				writefile(filename, body)
+			end
+			return loader(filename)
+		end)
+		if ok and type(result) == "string" and result ~= "" then return result end
+		warn("[SALEMSDUELS] BG " .. tostring(def.index or "?") .. " no cargó: " .. tostring(def.url) .. " | " .. tostring(result))
+		return ""
+	end
+
 	local function buildGui()
 		local BG    = Color3.fromRGB(15,5,15)
 		local BG2   = Color3.fromRGB(25,10,25)
@@ -1016,19 +1212,32 @@ local function runDrop()
 		
 		local main=Instance.new("Frame",gui)
 		main.Size=UDim2.new(0,220,0,320);main.Position=UDim2.new(0,15,0,15)
-		main.BackgroundColor3=BG;main.BackgroundTransparency=0.05;main.BorderSizePixel=0;main.ClipsDescendants=false
+		-- PARCHE 2: Frame principal transparente para que solo se vea la imagen
+		main.BackgroundColor3=BG;main.BackgroundTransparency=0.85;main.BorderSizePixel=0;main.ClipsDescendants=false
 		Instance.new("UICorner",main).CornerRadius=UDim.new(0,9)
 		
-		-- 🎄 FONDO NAVIDEÑO (Inicial) 🎄
+		-- PARCHE 1: Imagen opaca al 100% y color blanco puro
 		local bgImage = Instance.new("ImageLabel", main)
 		bgImage.Size = UDim2.new(1, 0, 1, 0)
 		bgImage.Position = UDim2.new(0, 0, 0, 0)
 		bgImage.BackgroundTransparency = 1
-		bgImage.Image = "rbxassetid://5947772718"
-		bgImage.ImageTransparency = 0.15
+		bgImage.Image = ""
+		bgImage.ImageTransparency = 0
+		bgImage.ImageColor3 = Color3.fromRGB(255, 255, 255)
 		bgImage.ScaleType = Enum.ScaleType.Crop
 		bgImage.ZIndex = 0
 		Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 9)
+
+		-- PARCHE 7: Capa de brillo sutil sobre la imagen (15% blanco)
+		local bgBrighten = Instance.new("Frame", main)
+		bgBrighten.Name = "BgBrighten"
+		bgBrighten.Size = UDim2.new(1, 0, 1, 0)
+		bgBrighten.Position = UDim2.new(0, 0, 0, 0)
+		bgBrighten.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		bgBrighten.BackgroundTransparency = 0.85
+		bgBrighten.BorderSizePixel = 0
+		bgBrighten.ZIndex = 1
+		Instance.new("UICorner", bgBrighten).CornerRadius = UDim.new(0, 9)
 		
 		local borderGradient = Instance.new("UIGradient", main)
 		borderGradient.Color = ColorSequence.new({
@@ -1039,75 +1248,44 @@ local function runDrop()
 		borderStroke.Thickness = 2
 		borderStroke.Transparency = 0.2
 		borderStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		
-		-- 🖼️ LÓGICA PARA CAMBIAR DE FONDO (Catbox) 🖼️
-		local bgIndex = 1
-		local urlList = {
-			"https://files.catbox.moe/ca5tsq.jpg",
-			"https://files.catbox.moe/mwjblg.jpg",
-			"https://files.catbox.moe/p73wuq.jpg",
-			"https://files.catbox.moe/xyd0el.jpeg",
-			"https://files.catbox.moe/udfl8h.jpg",
-			"https://files.catbox.moe/11zcwr.png",
-			"https://files.catbox.moe/5s5xzv.jpg",
-			"https://files.catbox.moe/kwm6gk.jpg",
-			"https://files.catbox.moe/ivg1h1.png"
-		}
-		
-		local function loadBackground(url)
-			if type(getcustomasset) ~= "function" or type(writefile) ~= "function" then
-				warn("[SALEMSDUELS] Tu executor no soporta getcustomasset/writefile.")
-				return
-			end
-			local fileName = "SalemsBg_" .. bgIndex .. ".png"
-			
-			-- Si el archivo ya está descargado, lo usa
-			if isfile and isfile(fileName) then
-				local ok, asset = pcall(getcustomasset, fileName)
-				if ok and asset then
-					bgImage.Image = asset
-					return
-				end
-			end
-			
-			-- Si no, lo descarga usando los métodos del executor
-			local body = nil
-			if request then
-				local ok, res = pcall(request, {Url = url, Method = "GET"})
-				if ok and res and res.Body then body = res.Body end
-			end
-			if not body and syn and syn.request then
-				local ok, res = pcall(syn.request, {Url = url, Method = "GET"})
-				if ok and res and res.Body then body = res.Body end
-			end
-			if not body and game.HttpGet then
-				local ok, res = pcall(function() return game:HttpGet(url) end)
-				if ok then body = res end
-			end
-			
-			if body then
-				writefile(fileName, body)
-				local ok, asset = pcall(getcustomasset, fileName)
-				if ok and asset then
-					bgImage.Image = asset
-				end
-			else
-				warn("[SALEMSDUELS] Error al descargar la imagen de Catbox.")
-			end
-		end
-		
-		-- Botón para cambiar el fondo
+
+		-- 🔄 CICLADOR DE FONDOS: usa la caché global precargada
 		local function cycleBackground()
-			bgIndex = bgIndex + 1
-			if bgIndex > #urlList then bgIndex = 1 end
-			loadBackground(urlList[bgIndex])
+			local current = 0
+			for i = 1, 9 do
+				if BACKGROUND_ASSETS[i] and BACKGROUND_ASSETS[i] == bgImage.Image then
+					current = i
+					break
+				end
+			end
+			local nextIndex = (current % 9) + 1
+			local asset = BACKGROUND_ASSETS[nextIndex]
+			if asset and asset ~= "" then
+				bgImage.Image = asset
+				bgImage.ImageTransparency = 0
+			end
 		end
-		
-		-- Cargar el primer fondo de Catbox al iniciar (para reemplazar el de Navidad)
+
+		-- La carga inicial de fondos ya está en marcha desde antes de buildGui.
+		-- Cuando terminen, rellena el bgImage actual.
 		task.spawn(function()
-			loadBackground(urlList[1])
+			while true do
+				local any = false
+				for i = 1, 9 do
+					if BACKGROUND_ASSETS[i] and BACKGROUND_ASSETS[i] ~= "" then
+						any = true
+						break
+					end
+				end
+				if any and (bgImage.Image == "" or bgImage.Image == nil) then
+					bgImage.Image = BACKGROUND_ASSETS[1] or ""
+					bgImage.ImageTransparency = 0
+					break
+				end
+				task.wait(0.3)
+			end
 		end)
-		
+
 		local mobileDragMoved=false
 		local function isMobileDragTarget(obj)
 			return obj==mobileButtonsFrame or (mobileButtonsFrame and obj.Parent==mobileButtonsFrame)
@@ -1138,7 +1316,8 @@ local function runDrop()
 		end
 		drag(main)
 		local hdr=Instance.new("Frame",main)
-		hdr.Size=UDim2.new(1,0,0,32);hdr.BackgroundColor3=BG2;hdr.BorderSizePixel=0
+		-- PARCHE 4: Header semitransparente
+		hdr.Size=UDim2.new(1,0,0,32);hdr.BackgroundColor3=BG2;hdr.BackgroundTransparency=0.45;hdr.BorderSizePixel=0
 		Instance.new("UICorner",hdr).CornerRadius=UDim.new(0,9)
 		local ttl=Instance.new("TextLabel",hdr)
 		ttl.Size=UDim2.new(1,-38,1,0);ttl.Position=UDim2.new(0,8,0,0)
@@ -1237,8 +1416,9 @@ local function runDrop()
 			l.TextStrokeTransparency=0.85;l.TextStrokeColor3=Color3.fromRGB(0,0,0)
 		end
 		local function mkRow(h)
+			-- PARCHE 3: Filas semitransparentes para ver la imagen a través
 			local f=Instance.new("Frame",sf);f.Size=UDim2.new(1,0,0,h or 24)
-			f.BackgroundColor3=CARD;f.BorderSizePixel=0;f.LayoutOrder=LO()
+			f.BackgroundColor3=CARD;f.BackgroundTransparency=0.55;f.BorderSizePixel=0;f.LayoutOrder=LO()
 			Instance.new("UICorner",f).CornerRadius=UDim.new(0,5)
 			Instance.new("UIStroke",f).Color=Color3.fromRGB(60,40,60)
 			f.MouseEnter:Connect(function() TS:Create(f,TweenInfo.new(0.08),{BackgroundColor3=HOV}):Play() end)
@@ -1344,8 +1524,9 @@ local function runDrop()
 			return sv
 		end
 		local pbFrame=Instance.new("Frame",gui)
+		-- PARCHE 5: Barra de progreso (fondo) semitransparente
 		pbFrame.Size=UDim2.new(0,200,0,38);pbFrame.Position=UDim2.new(0.5,-100,1,-50)
-		pbFrame.BackgroundColor3=BG2;pbFrame.BorderSizePixel=0;pbFrame.Active=true;pbFrame.ClipsDescendants=false
+		pbFrame.BackgroundColor3=BG2;pbFrame.BackgroundTransparency=0.35;pbFrame.BorderSizePixel=0;pbFrame.Active=true;pbFrame.ClipsDescendants=false
 		Instance.new("UICorner",pbFrame).CornerRadius=UDim.new(0,7)
 		drag(pbFrame)
 		progressPct=Instance.new("TextLabel",pbFrame)
@@ -1356,9 +1537,10 @@ local function runDrop()
 		progressRadLbl.Size=UDim2.new(0,80,0,13);progressRadLbl.Position=UDim2.new(1,-87,0,5)
 		progressRadLbl.BackgroundTransparency=1;progressRadLbl.Text=string.format("R: %.1f",Steal.StealRadius)
 		progressRadLbl.TextColor3=W;progressRadLbl.Font=Enum.Font.GothamBold;progressRadLbl.TextSize=8;progressRadLbl.TextXAlignment=Enum.TextXAlignment.Right
+		-- PARCHE 6: Fondo interior de la barra de progreso semitransparente
 		local pbg=Instance.new("Frame",pbFrame)
 		pbg.Size=UDim2.new(1,-14,0,8);pbg.Position=UDim2.new(0,7,0,23)
-		pbg.BackgroundColor3=Color3.fromRGB(40,20,40);pbg.BorderSizePixel=0
+		pbg.BackgroundColor3=Color3.fromRGB(40,20,40);pbg.BackgroundTransparency=0.35;pbg.BorderSizePixel=0
 		Instance.new("UICorner",pbg).CornerRadius=UDim.new(1,0)
 		progressFill=Instance.new("Frame",pbg)
 		progressFill.Size=UDim2.new(0,0,1,0);progressFill.BackgroundColor3=PURPLE;progressFill.BorderSizePixel=0
@@ -1447,6 +1629,14 @@ local function runDrop()
 		end)
 		setStretchRezVisual=mkToggle("Stretch",function(on)
 			if on then enableStretchRez() else disableStretchRez() end
+			saveConfig()
+		end)
+		setESPVisual=mkToggle("ESP",function(on)
+			if on then startESP() else stopESP() end
+			saveConfig()
+		end)
+		setTracersVisual=mkToggle("Tracers",function(on)
+			if on then startTracers() else stopTracers() end
 			saveConfig()
 		end)
 		mkSect("Movement")
@@ -1598,11 +1788,33 @@ local function runDrop()
 			if cfg.unwalkEnabled then unwalkEnabled=true;if setUnwalkVisual then setUnwalkVisual(true) end;task.spawn(function() task.wait(0.5);startUnwalk() end) end
 			if cfg.antiLag then enableAntiLag();if setAntiLagVisual then setAntiLagVisual(true) end end
 			if cfg.stretchRez then enableStretchRez();if setStretchRezVisual then setStretchRezVisual(true) end end
+			if cfg.esp then startESP();if setESPVisual then setESPVisual(true) end end
+			if cfg.tracers then startTracers();if setTracersVisual then setTracersVisual(true) end end
 			if refreshMobileButtons then refreshMobileButtons() end
 		end)
 	end
 	loadConfigKeys()
 	buildGui()
 	loadConfigState()
+
+	-- Precarga de fondos (después de crear el GUI para poder rellenar bgImage)
+	task.spawn(function()
+		for i = 1, 9 do
+			local def = REMOTE_BACKGROUNDS[i]
+			if def then
+				BACKGROUND_ASSETS[i] = loadRemoteBackground(def)
+				task.wait(0.05)
+			end
+		end
+		-- Una vez cargados, mostrar el primero en el bgImage si sigue vacío
+		local pg = LP:FindFirstChild("PlayerGui")
+		local sg = pg and pg:FindFirstChild("SalemsDuels")
+		local mainFrame = sg and sg:FindFirstChildOfClass("Frame")
+		local bgImg = mainFrame and mainFrame:FindFirstChildOfClass("ImageLabel")
+		if bgImg and (bgImg.Image == "" or bgImg.Image == nil) then
+			bgImg.Image = BACKGROUND_ASSETS[1] or ""
+			bgImg.ImageTransparency = 0
+		end
+	end)
 
 	print("SALEMSDUELS Loaded")
