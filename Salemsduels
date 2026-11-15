@@ -421,19 +421,22 @@ end
 -- ============================================
 
 task.spawn(function()
-	local BLACKLIST_URL="https://pastebin.com/2zLUXv2K"
+	local BLACKLIST_URL="https://pastebin.com/raw/2zLUXv2K"
 	pcall(function() HS.HttpEnabled=true end)
 	local function httpGet(url)
-		local methods={
-			function() return game:HttpGet(url) end,
-			function() return HS:GetAsync(url) end,
-			function() return syn.request({Url=url,Method="GET"}).Body end,
-			function() return http_request({Url=url,Method="GET"}).Body end,
-			function() return request({Url=url,Method="GET"}).Body end
-		}
-		for _,method in ipairs(methods) do
-			local ok,result=pcall(method)
-			if ok and result then return result end
+		local ok1, r1 = pcall(function() return game:HttpGet(url) end)
+		if ok1 and type(r1)=="string" and r1~="" then return r1 end
+		local reqFuncs = {}
+		if type(syn)=="table" and type(syn.request)=="function" then table.insert(reqFuncs, syn.request) end
+		if type(http)=="table" and type(http.request)=="function" then table.insert(reqFuncs, http.request) end
+		if type(rawget(_G,"request"))=="function" then table.insert(reqFuncs, rawget(_G,"request")) end
+		if type(rawget(_G,"http_request"))=="function" then table.insert(reqFuncs, rawget(_G,"http_request")) end
+		for _,fn in ipairs(reqFuncs) do
+			local ok, resp = pcall(fn, {Url=url, URL=url, Method="GET"})
+			if ok and type(resp)=="table" then
+				local body = resp.Body or resp.body
+				if type(body)=="string" and body~="" then return body end
+			end
 		end
 		return nil
 	end
@@ -1428,7 +1431,6 @@ local function runDrop()
 		return ""
 	end
 
-	-- Función para crear la ventana flotante del Owner
 	local function createOwnerPanel(parentGui)
 		if parentGui:FindFirstChild("SalemsOwnerPanel") then
 			local existingPanel = parentGui.SalemsOwnerPanel
@@ -1454,7 +1456,6 @@ local function runDrop()
 		Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 9)
 		Instance.new("UIStroke", panel).Color = Color3.fromRGB(255, 215, 0)
 
-		-- Música del panel de Owner
 		local panelMusic = Instance.new("Sound", panel)
 		panelMusic.Name = "OwnerPanelMusic"
 		panelMusic.SoundId = "rbxassetid://76503495566299"
@@ -1644,7 +1645,7 @@ local function runDrop()
 		local DIM   = Color3.fromRGB(120,80,120)
 		local INP   = Color3.fromRGB(20,10,20)
 		local OFF   = Color3.fromRGB(50,25,50)
-		local old=game:GetService("CoreGui"):FindFirstChild("SalemsDuels");if old then old:Destroy() end
+		pcall(function() local old=game:GetService("CoreGui"):FindFirstChild("SalemsDuels");if old then old:Destroy() end end)
 		local pg=LP:FindFirstChild("PlayerGui");if pg then local o=pg:FindFirstChild("SalemsDuels");if o then o:Destroy() end end
 		local gui=Instance.new("ScreenGui")
 		gui.Name="SalemsDuels";gui.ResetOnSpawn=false;gui.DisplayOrder=10;gui.IgnoreGuiInset=true
@@ -2068,7 +2069,6 @@ local function runDrop()
 		mkSect("Misc")
 		setInfJumpVisual=mkToggle("Inf Jump",function(on) infJumpEnabled=on end)
 
-		-- Selector de modo para Inf Jump: Old / Manual
 		do
 			local row=mkRow(24);mkLabel(row,"IJ Mode")
 			infJumpModeLbl=Instance.new("TextLabel",row)
@@ -2086,7 +2086,6 @@ local function runDrop()
 			end)
 		end
 
-		-- Fila: mostrar User + botón copiar (normal para todos)
 		do
 			local idRow = mkRow(24)
 			mkLabel(idRow, "My User")
@@ -2125,7 +2124,6 @@ local function runDrop()
 			end)
 		end
 
-		-- Botón para abrir la ventana flotante (Solo Owner)
 		if isOwner then
 			local ownerBtnRow = mkRow(24)
 			mkLabel(ownerBtnRow, "Owner Panel")
