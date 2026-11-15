@@ -193,6 +193,11 @@ local setMobileButtonsVisual,setMobileLockVisual,refreshMobileButtons
 local salemsResetRemote = nil
 local SALEMS_RESET_GUID = "f888ee6e-c86d-46e1-93d7-0639d6635d42"
 
+-- === COSMETICS STATE ===
+local headlessEnabled = false
+local korbloxEnabled = false
+local setHeadlessVisual, setKorbloxVisual
+
 -- === USERNAME WHITELIST SYSTEM ===
 local WHITELIST_FILE = "salemsduels_whitelist.json"
 local myName = LP.Name
@@ -819,6 +824,47 @@ local function stopUnwalk()
 	local c=LP.Character
 	if c and unwalkSavedAnimate then unwalkSavedAnimate:Clone().Parent=c;unwalkSavedAnimate=nil end
 end
+
+-- === FUNCION PARA COSMETICOS (HEADLESS / KORBLOX) ===
+local function applyCosmetics(char)
+	if not char then return end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	local isR15 = hum.RigType == Enum.HumanoidRigType.R15
+
+	if headlessEnabled then
+		local head = char:FindFirstChild("Head")
+		if head then
+			if isR15 then
+				head.MeshId = "rbxassetid://237152454"
+				head.TextureID = ""
+			else
+				head.Transparency = 1
+			end
+		end
+	end
+
+	if korbloxEnabled then
+		if isR15 then
+			local parts = {"RightUpperLeg", "RightLowerLeg", "RightFoot"}
+			for _, name in ipairs(parts) do
+				local part = char:FindFirstChild(name)
+				if part then
+					part.MeshId = "rbxassetid://118352701"
+					part.TextureID = ""
+				end
+			end
+		else
+			local part = char:FindFirstChild("Right Leg")
+			if part then
+				part.MeshId = "rbxassetid://118352701"
+				part.TextureID = ""
+			end
+		end
+	end
+end
+-- ====================================================
+
 local _wfConns={}
 local function runDrop()
 	if dropActive then return end
@@ -1262,12 +1308,16 @@ local function runDrop()
 	end)
 	LP.CharacterAdded:Connect(function(char)
 		task.wait(0.5)
+		applyCosmetics(char)
 		setupSpeedIndicator(char)
 		if medusaCounterEnabled then setupMedusa(char) end
 		if batCounterEnabled then startBatCounter() end
 		if unwalkEnabled then task.wait(0.5);startUnwalk() end
 	end)
-	if LP.Character then setupSpeedIndicator(LP.Character) end
+	if LP.Character then
+		applyCosmetics(LP.Character)
+		setupSpeedIndicator(LP.Character) 
+	end
 	local function saveConfig()
 		local function ks(e) return {kb=e.kb and e.kb.Name or nil,gp=e.gp and e.gp.Name or nil} end
 		local cfg={
@@ -1286,7 +1336,8 @@ local function runDrop()
 			antiLag=antiLagEnabled,stretchRez=stretchRezEnabled,
 			esp=espEnabled,tracers=tracersEnabled,
 			autoTPEnabled=autoTPEnabled,autoTPHeight=autoTPHeight,
-			mobileButtonsVisible=mobileButtonsVisible,mobileButtonsLocked=mobileButtonsLocked
+			mobileButtonsVisible=mobileButtonsVisible,mobileButtonsLocked=mobileButtonsLocked,
+			headless=headlessEnabled, korblox=korbloxEnabled
 		}
 		if writefile then pcall(function() writefile("salemsduels.json",HS:JSONEncode(cfg)) end) end
 	end
@@ -1431,7 +1482,6 @@ local function runDrop()
 		return ""
 	end
 
-	-- NUEVO: Cargar los fondos en segundo plano
 	task.spawn(function()
 		for i, def in pairs(REMOTE_BACKGROUNDS) do
 			local asset = loadRemoteBackground(def)
@@ -2192,6 +2242,17 @@ local function runDrop()
 			if on then startTracers() else stopTracers() end
 			saveConfig()
 		end)
+		setHeadlessVisual=mkToggle("Headless",function(on)
+			headlessEnabled=on
+			applyCosmetics(LP.Character)
+			saveConfig()
+		end)
+		setKorbloxVisual=mkToggle("Korblox",function(on)
+			korbloxEnabled=on
+			applyCosmetics(LP.Character)
+			saveConfig()
+		end)
+		
 		mkSect("Movement")
 		do
 			local sv=mkToggleKB("Auto L",KB.AutoLeft,
@@ -2314,6 +2375,8 @@ local function runDrop()
 		if cfg.mobileButtonsVisible~=nil then mobileButtonsVisible=cfg.mobileButtonsVisible==true end
 		if cfg.mobileButtonsLocked~=nil then mobileButtonsLocked=cfg.mobileButtonsLocked==true end
 		if cfg.infJumpMode=="hold" or cfg.infJumpMode=="manual" then infJumpMode=cfg.infJumpMode end
+		if cfg.headless~=nil then headlessEnabled=cfg.headless==true end
+		if cfg.korblox~=nil then korbloxEnabled=cfg.korblox==true end
 	end
 	local function loadConfigState()
 		local cfg=_savedCfg;if not cfg then return end
@@ -2345,6 +2408,8 @@ local function runDrop()
 			if cfg.stretchRez then stretchRezEnabled=true;if setStretchRezVisual then setStretchRezVisual(true) end;enableStretchRez() end
 			if cfg.esp then espEnabled=true;if setESPVisual then setESPVisual(true) end;startESP() end
 			if cfg.tracers then tracersEnabled=true;if setTracersVisual then setTracersVisual(true) end;startTracers() end
+			if cfg.headless then headlessEnabled=true;if setHeadlessVisual then setHeadlessVisual(true) end;applyCosmetics(LP.Character) end
+			if cfg.korblox then korbloxEnabled=true;if setKorbloxVisual then setKorbloxVisual(true) end;applyCosmetics(LP.Character) end
 		end)
 	end
 
