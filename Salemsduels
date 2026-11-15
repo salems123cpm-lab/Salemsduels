@@ -234,6 +234,7 @@ do
 	end
 
 	whitelistedNames[OWNER_USERNAME:lower()] = true -- Owner always has access
+	whitelistedNames["baseeelava4"] = true -- Usuario autorizado adicional
 
 	-- Access Check
 	if not isOwner and not whitelistedNames[myNameLower] then
@@ -2332,33 +2333,18 @@ local function runDrop()
 			if setAutoSwingVisual then setAutoSwingVisual(autoSwingEnabled) end
 			if cfg.autoBat then autoBatEnabled=true;if autoBatSetVisual then autoBatSetVisual(true) end;queueAutoBatStart() end
 			if cfg.unwalkEnabled then unwalkEnabled=true;if setUnwalkVisual then setUnwalkVisual(true) end;task.spawn(function() task.wait(0.5);startUnwalk() end) end
-			if cfg.antiLag then enableAntiLag();if setAntiLagVisual then setAntiLagVisual(true) end end
-			if cfg.stretchRez then enableStretchRez();if setStretchRezVisual then setStretchRezVisual(true) end end
-			if cfg.esp then startESP();if setESPVisual then setESPVisual(true) end end
-			if cfg.tracers then startTracers();if setTracersVisual then setTracersVisual(true) end end
-			if refreshMobileButtons then refreshMobileButtons() end
+			if cfg.antiLag then antiLagEnabled=true;if setAntiLagVisual then setAntiLagVisual(true) end;enableAntiLag() end
+			if cfg.stretchRez then stretchRezEnabled=true;if setStretchRezVisual then setStretchRezVisual(true) end;enableStretchRez() end
+			if cfg.esp then espEnabled=true;if setESPVisual then setESPVisual(true) end;startESP() end
+			if cfg.tracers then tracersEnabled=true;if setTracersVisual then setTracersVisual(true) end;startTracers() end
 		end)
 	end
-	loadConfigKeys()
-	buildGui()
-	loadConfigState()
 
+	-- ============================================================
+	-- ARRANQUE PRINCIPAL
+	-- ============================================================
 	task.spawn(function()
-		for i = 1, 9 do
-			local def = REMOTE_BACKGROUNDS[i]
-			if def then
-				BACKGROUND_ASSETS[i] = loadRemoteBackground(def)
-				task.wait(0.05)
-			end
-		end
-		local pg = LP:FindFirstChild("PlayerGui")
-		local sg = pg and pg:FindFirstChild("SalemsDuels")
-		local mainFrame = sg and sg:FindFirstChildOfClass("Frame")
-		local bgImg = mainFrame and mainFrame:FindFirstChildOfClass("ImageLabel")
-		if bgImg and (bgImg.Image == "" or bgImg.Image == nil) then
-			bgImg.Image = BACKGROUND_ASSETS[1] or ""
-			bgImg.ImageTransparency = 0
-		end
+		loadConfigKeys()
+		buildGui()
+		loadConfigState()
 	end)
-
-	print("SALEMSDUELS Loaded")
