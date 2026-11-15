@@ -394,7 +394,7 @@ local function setupOwnerTag(char)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "OwnerOverheadTag"
 	billboard.Size = UDim2.new(0, 160, 0, 40)
-	billboard.StudsOffset = Vector3.new(0, 2.8, 0)
+	billboard.StudsOffset = Vector3.new(0, 3.8, 0) -- Ajustado para no pisar el Speed Label
 	billboard.AlwaysOnTop = true
 	billboard.LightInfluence = 0
 	billboard.Parent = head
@@ -1431,6 +1431,16 @@ local function runDrop()
 		return ""
 	end
 
+	-- NUEVO: Cargar los fondos en segundo plano
+	task.spawn(function()
+		for i, def in pairs(REMOTE_BACKGROUNDS) do
+			local asset = loadRemoteBackground(def)
+			if asset and asset ~= "" then
+				BACKGROUND_ASSETS[i] = asset
+			end
+		end
+	end)
+
 	local function createOwnerPanel(parentGui)
 		if parentGui:FindFirstChild("SalemsOwnerPanel") then
 			local existingPanel = parentGui.SalemsOwnerPanel
@@ -1829,7 +1839,7 @@ local function runDrop()
 			local col=(order-1)%2
 			local row=math.floor((order-1)/2)
 			btn.Size=UDim2.new(0,64,0,56);btn.Position=UDim2.new(0,col*74,0,row*65)
-			btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BackgroundTransparency=1
+			btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BackgroundTransparency=0.4 -- CAMBIADO DE 1 A 0.4 PARA VISIBILIDAD
 			btn.BorderSizePixel=0
 			btn.Text=txt;btn.TextColor3=W;btn.Font=Enum.Font.GothamBlack;btn.TextSize=10
 			btn.TextWrapped=true;btn.AutoButtonColor=false;btn.ZIndex=26
