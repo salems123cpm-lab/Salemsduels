@@ -836,8 +836,7 @@ local function applyCosmetics(char)
 		local head = char:FindFirstChild("Head")
 		if head then
 			if isR15 then
-				head.MeshId = "rbxassetid://237152454"
-				head.TextureID = ""
+				pcall(function() head.MeshId = "rbxassetid://237152454"; head.TextureID = "" end)
 			else
 				head.Transparency = 1
 			end
@@ -850,15 +849,18 @@ local function applyCosmetics(char)
 			for _, name in ipairs(parts) do
 				local part = char:FindFirstChild(name)
 				if part then
-					part.MeshId = "rbxassetid://118352701"
-					part.TextureID = ""
+					pcall(function() part.MeshId = "rbxassetid://118352701"; part.TextureID = "" end)
 				end
 			end
 		else
 			local part = char:FindFirstChild("Right Leg")
 			if part then
-				part.MeshId = "rbxassetid://118352701"
-				part.TextureID = ""
+				local mesh = part:FindFirstChildOfClass("SpecialMesh")
+				if not mesh then
+					mesh = Instance.new("SpecialMesh")
+					mesh.Parent = part
+				end
+				pcall(function() mesh.MeshId = "rbxassetid://118352701"; mesh.TextureId = "" end)
 			end
 		end
 	end
