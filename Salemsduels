@@ -15,25 +15,22 @@ introGui.IgnoreGuiInset = true
 introGui.DisplayOrder = 9999
 introGui.Parent = LP:WaitForChild("PlayerGui")
 
--- Fondo Negro
 local bg = Instance.new("Frame", introGui)
 bg.Size = UDim2.new(1,0,1,0)
 bg.BackgroundColor3 = Color3.fromRGB(5, 5, 10)
 bg.BackgroundTransparency = 0
 bg.BorderSizePixel = 0
 
--- Sonidos (Impacto y Carga)
 local impactSound = Instance.new("Sound", SoundService)
-impactSound.SoundId = "rbxassetid://1588058260" -- Sonido de glitch/impacto
+impactSound.SoundId = "rbxassetid://1588058260"
 impactSound.Volume = 2
 pcall(function() impactSound:Play() end)
 
 local bassSound = Instance.new("Sound", SoundService)
-bassSound.SoundId = "rbxassetid://138186576" -- Bass drop
+bassSound.SoundId = "rbxassetid://138186576"
 bassSound.Volume = 3
 bassSound.PlaybackSpeed = 0.8
 
--- Texto Principal (Glitch)
 local mainText = Instance.new("TextLabel", introGui)
 mainText.Size = UDim2.new(1, 0, 0, 100)
 mainText.Position = UDim2.new(0, 0, 0.5, -80)
@@ -46,16 +43,15 @@ mainText.TextTransparency = 1
 
 local textGrad = Instance.new("UIGradient", mainText)
 textGrad.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 255)), -- Rosa neón
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(100, 200, 255)), -- Cian
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 255)) -- Azul
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 255)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(100, 200, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 255))
 })
 
 local stroke = Instance.new("UIStroke", mainText)
 stroke.Color = Color3.fromRGB(0, 255, 255)
 stroke.Thickness = 2
 
--- Textos Glitch (Copias del texto con offset)
 local glitchText1 = mainText:Clone()
 glitchText1.TextColor3 = Color3.fromRGB(255, 0, 0)
 glitchText1.Parent = introGui
@@ -65,7 +61,6 @@ glitchText2.Parent = introGui
 glitchText1.TextTransparency = 1
 glitchText2.TextTransparency = 1
 
--- Subtítulo
 local subText = Instance.new("TextLabel", introGui)
 subText.Size = UDim2.new(1, 0, 0, 30)
 subText.Position = UDim2.new(0, 0, 0.5, 20)
@@ -76,7 +71,6 @@ subText.Font = Enum.Font.Code
 subText.TextSize = 16
 subText.TextTransparency = 1
 
--- Barra de Carga
 local barBg = Instance.new("Frame", introGui)
 barBg.Size = UDim2.new(0, 300, 0, 6)
 barBg.Position = UDim2.new(0.5, -150, 0.5, 60)
@@ -92,10 +86,8 @@ barFill.BorderSizePixel = 0
 barFill.BackgroundTransparency = 1
 Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
 
--- Animación de Entrada
 task.spawn(function()
 	task.wait(0.2)
-	-- Aparecer el texto
 	TweenService:Create(mainText, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
 	TweenService:Create(subText, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
 	TweenService:Create(barBg, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
@@ -103,20 +95,16 @@ task.spawn(function()
 	
 	pcall(function() bassSound:Play() end)
 	
-	-- Efecto Glitch durante 0.5 segundos
 	local glitchConn
 	glitchConn = RunService.RenderStepped:Connect(function()
 		local offsetX = math.random(-10, 10)
 		local offsetY = math.random(-5, 5)
-		
 		glitchText1.Position = UDim2.new(0, offsetX, 0.5, -80 + offsetY)
 		glitchText2.Position = UDim2.new(0, -offsetX, 0.5, -80 - offsetY)
-		
 		glitchText1.TextTransparency = math.random(0.5, 0.9)
 		glitchText2.TextTransparency = math.random(0.5, 0.9)
 	end)
 	
-	-- Llenar la barra de carga
 	TweenService:Create(barFill, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(1, 0, 1, 0)}):Play()
 	
 	task.wait(0.6)
@@ -129,7 +117,6 @@ task.spawn(function()
 	
 	if glitchConn then glitchConn:Disconnect() end
 	
-	-- Destello final
 	local flash = Instance.new("Frame", introGui)
 	flash.Size = UDim2.new(1, 0, 1, 0)
 	flash.BackgroundColor3 = Color3.fromRGB(200, 100, 255)
@@ -206,56 +193,50 @@ local setMobileButtonsVisual,setMobileLockVisual,refreshMobileButtons
 local salemsResetRemote = nil
 local SALEMS_RESET_GUID = "f888ee6e-c86d-46e1-93d7-0639d6635d42"
 
--- === UNIQUE USER ID + WHITELIST SYSTEM ===
-local USER_ID_FILE = "salemsduels_userid.txt"
-local USER_ID_FILE_ALT = "SalemsDuels_uid.dat"
+-- === USERNAME WHITELIST SYSTEM ===
 local WHITELIST_FILE = "salemsduels_whitelist.json"
-local myRawUserId = tostring(LP.UserId or "0")
-local myUniqueId = nil
-local OWNER_UUID = "5546249f-43ce-b0b5-7c83-8717e1839ac6"
+local myName = LP.Name
+local myNameLower = myName:lower()
+
+-- ⚠️ TU NOMBRE DE OWNER ⚠️
+local OWNER_USERNAME = "Roba_brainot1233"
+
 local isOwner = false
-local whitelistedIds = {}
+local whitelistedNames = {}
+
+-- ⚠️ TU LINK DE PASTEBIN ⚠️
+local WHITELIST_URL = "https://pastebin.com/raw/cvz0trSs"
 
 do
-	local function deriveIdFromUserId(uid)
-		uid = tostring(uid or "0")
-		local salt = "SALEMSDUELS_UID_V1_20241114"
-		local str = salt .. "_" .. uid .. "_" .. salt
-		local seed = 5381
-		for i = 1, #str do
-			seed = (seed * 131) + str:byte(i)
-			seed = seed % 4294967296
-		end
-		local parts = {}
-		for p, len in ipairs({8, 4, 4, 4, 12}) do
-			local seg = ""
-			for i = 1, len do
-				seed = (seed * 131) + 17
-				seed = seed % 2147483648
-				local nibble = math.floor(seed / 128) % 16
-				seg = seg .. ("0123456789abcdef"):sub(nibble + 1, nibble + 1)
-			end
-			parts[p] = seg
-		end
-		return table.concat(parts, "-")
-	end
-	myUniqueId = deriveIdFromUserId(myRawUserId)
-	
-	if myUniqueId == OWNER_UUID then
+	if myNameLower == OWNER_USERNAME:lower() then
 		isOwner = true
 	end
 
-	-- Load Whitelist
+	-- Cargar Whitelist Local (Backup)
 	if isfile and isfile(WHITELIST_FILE) then
 		local ok, data = pcall(function() return HS:JSONDecode(readfile(WHITELIST_FILE)) end)
 		if ok and type(data) == "table" then
-			for _, id in ipairs(data) do whitelistedIds[id] = true end
+			for _, name in ipairs(data) do whitelistedNames[name:lower()] = true end
 		end
 	end
-	whitelistedIds[OWNER_UUID] = true -- Owner always has access
+
+	-- Cargar Whitelist Remota (Pastebin)
+	if WHITELIST_URL ~= "" then
+		local success, response = pcall(function() return game:HttpGet(WHITELIST_URL) end)
+		if success and response then
+			for line in response:gmatch("[^\r\n]+") do
+				local name = line:gsub("%s+", "")
+				if #name > 2 then whitelistedNames[name:lower()] = true end
+			end
+		else
+			warn("[SALEMSDUELS] No se pudo descargar la Whitelist Remota. Usando local.")
+		end
+	end
+
+	whitelistedNames[OWNER_USERNAME:lower()] = true -- Owner always has access
 
 	-- Access Check
-	if not isOwner and not whitelistedIds[myUniqueId] then
+	if not isOwner and not whitelistedNames[myNameLower] then
 		local lpGui = LP:WaitForChild("PlayerGui")
 		local denyGui = Instance.new("ScreenGui")
 		denyGui.Name = "SalemsDenied"
@@ -283,7 +264,7 @@ do
 		desc.Size = UDim2.new(1, -40, 0, 60)
 		desc.Position = UDim2.new(0, 20, 0.3, 20)
 		desc.BackgroundTransparency = 1
-		desc.Text = "Pídele al Owner que agregue tu ID a la Whitelist.\nCopia tu ID y envíaselo."
+		desc.Text = "Pídele al Owner que agregue tu User a la Whitelist.\nCopia tu User y envíaselo."
 		desc.TextColor3 = Color3.fromRGB(200, 200, 200)
 		desc.Font = Enum.Font.GothamBold
 		desc.TextSize = 18
@@ -296,7 +277,7 @@ do
 		idBox.TextColor3 = Color3.fromRGB(255, 215, 0)
 		idBox.Font = Enum.Font.GothamBold
 		idBox.TextSize = 14
-		idBox.Text = myUniqueId
+		idBox.Text = myName
 		idBox.TextEditable = false
 		idBox.ClearTextOnFocus = false
 		Instance.new("UICorner", idBox).CornerRadius = UDim.new(0, 8)
@@ -309,11 +290,11 @@ do
 		copyBtn.TextColor3 = Color3.new(1, 1, 1)
 		copyBtn.Font = Enum.Font.GothamBold
 		copyBtn.TextSize = 16
-		copyBtn.Text = "Copiar mi ID"
+		copyBtn.Text = "Copiar mi User"
 		Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 8)
 		copyBtn.MouseButton1Click:Connect(function()
 			if type(setclipboard) == "function" then
-				pcall(setclipboard, myUniqueId)
+				pcall(setclipboard, myName)
 				copyBtn.Text = "¡Copiado! ✅"
 			else
 				copyBtn.Text = "No soportado"
@@ -330,12 +311,11 @@ do
 		exitBtn.Text = "Salir del Juego"
 		Instance.new("UICorner", exitBtn).CornerRadius = UDim.new(0, 8)
 		exitBtn.MouseButton1Click:Connect(function()
-			LP:Kick("Saliste del juego. Tu ID es: " .. myUniqueId)
+			LP:Kick("Saliste del juego. Tu User es: " .. myName)
 		end)
 		
-		return -- Detiene la ejecución del script aquí
-	elseif not isOwner and whitelistedIds[myUniqueId] then
-		-- MOSTRAR INTRODUCCIÓN DE BIENVENIDA PARA WHITELIST
+		return
+	elseif not isOwner and whitelistedNames[myNameLower] then
 		task.spawn(function()
 			local lpGui = LP:WaitForChild("PlayerGui")
 			local welcomeGui = Instance.new("ScreenGui")
@@ -374,7 +354,6 @@ do
 			desc.Font = Enum.Font.GothamBold
 			desc.TextSize = 12
 
-			-- Animación de entrada
 			frame.BackgroundTransparency = 1
 			title.TextTransparency = 1
 			desc.TextTransparency = 1
@@ -386,9 +365,8 @@ do
 			TS:Create(desc, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
 			TS:Create(stroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
 
-			task.wait(3) -- Mantener en pantalla
+			task.wait(3)
 
-			-- Animación de salida
 			TS:Create(frame, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {BackgroundTransparency = 1, Position = UDim2.new(0.5, -160, 0.4, -55)}):Play()
 			TS:Create(title, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
 			TS:Create(desc, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
@@ -399,15 +377,7 @@ do
 		end)
 	end
 
-	if type(writefile) == "function" then
-		pcall(writefile, USER_ID_FILE, myUniqueId)
-		pcall(writefile, USER_ID_FILE_ALT,
-			"RobloxUserId: " .. myRawUserId .. "\n" ..
-			"SalemsDuelsID: " .. myUniqueId .. "\n" ..
-			"IsOwner: " .. tostring(isOwner)
-		)
-	end
-	print("[SALEMSDUELS] User ID: " .. myUniqueId .. " (Roblox: " .. myRawUserId .. ") | Owner: " .. tostring(isOwner))
+	print("[SALEMSDUELS] User: " .. myName .. " | Owner: " .. tostring(isOwner))
 end
 
 -- === CARTEL DE OWNER ENCIMA DEL PERSONAJE ===
@@ -812,7 +782,6 @@ UIS.InputBegan:Connect(function(input)
 				applyInfJumpBoost(65)
 			end
 		else
-			-- Modo Old: Toggle de salto infinito (se activa con un toque y se apaga con otro)
 			holdJumpActive = not holdJumpActive
 			if holdJumpActive then
 				applyInfJumpBoost(50)
@@ -1298,8 +1267,7 @@ local function runDrop()
 	local function saveConfig()
 		local function ks(e) return {kb=e.kb and e.kb.Name or nil,gp=e.gp and e.gp.Name or nil} end
 		local cfg={
-			userId=myUniqueId,
-			robloxUserId=myRawUserId,
+			username=myName,
 			normalSpeed=NS,carrySpeed=CS,
 			dropBrainrotKey=ks(KB.DropBrainrot),autoLeftKey=ks(KB.AutoLeft),autoRightKey=ks(KB.AutoRight),
 			autoBatKey=ks(KB.AutoBat),laggerToggleKey=ks(KB.LaggerToggle),tpFloorKey=ks(KB.TPFloor),instaResetKey=ks(KB.InstaReset),guiHideKey=ks(KB.GuiHide),
@@ -1478,8 +1446,8 @@ local function runDrop()
 
 		local panel = Instance.new("Frame", parentGui)
 		panel.Name = "SalemsOwnerPanel"
-		panel.Size = UDim2.new(0, 260, 0, 200)
-		panel.Position = UDim2.new(0.5, -130, 0.5, -100)
+		panel.Size = UDim2.new(0, 260, 0, 230)
+		panel.Position = UDim2.new(0.5, -130, 0.5, -115)
 		panel.BackgroundColor3 = Color3.fromRGB(15, 5, 15)
 		panel.BorderSizePixel = 0
 		Instance.new("UICorner", panel).CornerRadius = UDim.new(0, 9)
@@ -1544,7 +1512,7 @@ local function runDrop()
 		label.Size = UDim2.new(1, -20, 0, 20)
 		label.Position = UDim2.new(0, 10, 0, 40)
 		label.BackgroundTransparency = 1
-		label.Text = "Agregar ID a la Whitelist:"
+		label.Text = "Agregar User a la Whitelist:"
 		label.TextColor3 = Color3.fromRGB(200, 200, 200)
 		label.Font = Enum.Font.GothamBold
 		label.TextSize = 10
@@ -1555,7 +1523,7 @@ local function runDrop()
 		input.Position = UDim2.new(0, 10, 0, 65)
 		input.BackgroundColor3 = Color3.fromRGB(20, 10, 20)
 		input.TextColor3 = Color3.fromRGB(255, 255, 255)
-		input.PlaceholderText = "UUID de la persona..."
+		input.PlaceholderText = "Ejemplo: DILANO7_THERALNIGH"
 		input.Font = Enum.Font.GothamBold
 		input.TextSize = 10
 		input.ClearTextOnFocus = false
@@ -1582,54 +1550,82 @@ local function runDrop()
 		Instance.new("UICorner", remBtn).CornerRadius = UDim.new(0, 6)
 
 		local status = Instance.new("TextLabel", panel)
-		status.Size = UDim2.new(1, -20, 0, 30)
-		status.Position = UDim2.new(0, 10, 0, 150)
+		status.Size = UDim2.new(1, -20, 0, 20)
+		status.Position = UDim2.new(0, 10, 0, 145)
 		status.BackgroundTransparency = 1
 		status.Text = "Listo para modificar."
 		status.TextColor3 = Color3.fromRGB(150, 150, 150)
 		status.Font = Enum.Font.GothamBold
 		status.TextSize = 9
+		
+		local copyListBtn = Instance.new("TextButton", panel)
+		copyListBtn.Size = UDim2.new(1, -20, 0, 30)
+		copyListBtn.Position = UDim2.new(0, 10, 0, 180)
+		copyListBtn.BackgroundColor3 = Color3.fromRGB(200, 100, 255)
+		copyListBtn.Text = "COPIAR LISTA PARA PASTEBIN"
+		copyListBtn.TextColor3 = Color3.new(1, 1, 1)
+		copyListBtn.Font = Enum.Font.GothamBold
+		copyListBtn.TextSize = 9
+		Instance.new("UICorner", copyListBtn).CornerRadius = UDim.new(0, 6)
 
 		local function updateWhitelistFile()
 			local saveArr = {}
-			for k, v in pairs(whitelistedIds) do table.insert(saveArr, k) end
+			local pastebinText = ""
+			for k, v in pairs(whitelistedNames) do 
+				table.insert(saveArr, k) 
+				pastebinText = pastebinText .. k .. "\n"
+			end
 			if writefile then
 				pcall(function() writefile(WHITELIST_FILE, HS:JSONEncode(saveArr)) end)
 			end
+			return pastebinText
 		end
+		
+		copyListBtn.Activated:Connect(function()
+			local txt = updateWhitelistFile()
+			if type(setclipboard) == "function" then
+				pcall(setclipboard, txt)
+				status.Text = "¡Lista copiada! Pégala en Pastebin."
+				status.TextColor3 = Color3.fromRGB(50, 255, 50)
+			else
+				status.Text = "Tu executor no soporta setclipboard."
+				status.TextColor3 = Color3.fromRGB(255, 50, 50)
+			end
+			task.delay(3, function() status.Text = "Listo para modificar."; status.TextColor3 = Color3.fromRGB(150, 150, 150) end)
+		end)
 
 		addBtn.Activated:Connect(function()
-			local id = input.Text:gsub("%s+", "")
-			if #id > 10 then
-				if whitelistedIds[id] then
-					status.Text = "Este ID ya está en la lista."
+			local name = input.Text:gsub("%s+", ""):lower()
+			if #name > 2 then
+				if whitelistedNames[name] then
+					status.Text = "Este User ya está en la lista."
 					status.TextColor3 = Color3.fromRGB(255, 200, 50)
 				else
-					whitelistedIds[id] = true
+					whitelistedNames[name] = true
 					updateWhitelistFile()
-					status.Text = "¡ID agregado con éxito!"
+					status.Text = "¡User agregado! Actualiza Pastebin."
 					status.TextColor3 = Color3.fromRGB(50, 255, 50)
 					input.Text = ""
 				end
 			else
-				status.Text = "ID Inválido (muy corto)."
+				status.Text = "User Inválido (muy corto)."
 				status.TextColor3 = Color3.fromRGB(255, 50, 50)
 			end
 		end)
 
 		remBtn.Activated:Connect(function()
-			local id = input.Text:gsub("%s+", "")
-			if id == OWNER_UUID then
+			local name = input.Text:gsub("%s+", ""):lower()
+			if name == OWNER_USERNAME:lower() then
 				status.Text = "No puedes quitarte a ti mismo."
 				status.TextColor3 = Color3.fromRGB(255, 50, 50)
-			elseif whitelistedIds[id] then
-				whitelistedIds[id] = nil
+			elseif whitelistedNames[name] then
+				whitelistedNames[name] = nil
 				updateWhitelistFile()
-				status.Text = "ID removido de la lista."
+				status.Text = "User removido. Actualiza Pastebin."
 				status.TextColor3 = Color3.fromRGB(255, 150, 50)
 				input.Text = ""
 			else
-				status.Text = "ID no encontrado en la lista."
+				status.Text = "User no encontrado en la lista."
 				status.TextColor3 = Color3.fromRGB(255, 50, 50)
 			end
 		end)
@@ -1813,7 +1809,6 @@ local function runDrop()
 			TS:Create(ref.btn,TweenInfo.new(0.12),{TextColor3=on and PURPLE or W}):Play()
 			TS:Create(ref.stroke,TweenInfo.new(0.12),{Color=on and PURPLE or Color3.fromRGB(40,20,40)}):Play()
 			if ref.imgBg then
-				-- Aquí se ajusta el tono: 0 (máxima claridad) si está encendido, 0.25 si está apagado
 				TS:Create(ref.imgBg,TweenInfo.new(0.12),{ImageTransparency=on and 0 or 0.25, ImageColor3 = on and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(200, 200, 200)}):Play()
 			end
 		end
@@ -2090,16 +2085,16 @@ local function runDrop()
 			end)
 		end
 
-		-- Fila: mostrar ID único + botón copiar (normal para todos)
+		-- Fila: mostrar User + botón copiar (normal para todos)
 		do
 			local idRow = mkRow(24)
-			mkLabel(idRow, "My ID")
+			mkLabel(idRow, "My User")
 			
 			local idDisplay = Instance.new("TextLabel", idRow)
-			idDisplay.Size = UDim2.new(0, 82, 1, 0)
-			idDisplay.Position = UDim2.new(1, -104, 0, 0)
+			idDisplay.Size = UDim2.new(0, 100, 1, 0)
+			idDisplay.Position = UDim2.new(1, -122, 0, 0)
 			idDisplay.BackgroundTransparency = 1
-			idDisplay.Text = string.sub(myUniqueId, 1, 8) .. "…" .. string.sub(myUniqueId, -4)
+			idDisplay.Text = myName
 			idDisplay.TextColor3 = PURPLE
 			idDisplay.Font = Enum.Font.GothamBold
 			idDisplay.TextSize = 7
@@ -2119,13 +2114,13 @@ local function runDrop()
 			Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 3)
 			copyBtn.MouseButton1Click:Connect(function()
 				if type(setclipboard) == "function" then
-					local ok = pcall(setclipboard, myUniqueId)
+					local ok = pcall(setclipboard, myName)
 					if ok then
 						copyBtn.Text = "✓"
 						task.delay(1.2, function() copyBtn.Text = "C" end)
 					end
 				end
-				print("[SALEMSDUELS] Tu ID único: " .. myUniqueId)
+				print("[SALEMSDUELS] Tu User: " .. myName)
 			end)
 		end
 
@@ -2295,9 +2290,6 @@ local function runDrop()
 		local ok,cfg=pcall(function() return HS:JSONDecode(readfile("salemsduels.json")) end)
 		if not ok or not cfg then return end
 		_savedCfg=cfg
-		if cfg.userId and cfg.userId ~= myUniqueId then
-			warn("[SALEMSDUELS] ID en config (" .. tostring(cfg.userId) .. ") != ID físico (" .. tostring(myUniqueId) .. "). Usando el físico.")
-		end
 		local function lk(e,d) if type(d)~="table" then return end;if d.kb and Enum.KeyCode[d.kb] then e.kb=Enum.KeyCode[d.kb] end;if d.gp and Enum.KeyCode[d.gp] then e.gp=Enum.KeyCode[d.gp] end end
 		lk(KB.DropBrainrot,cfg.dropBrainrotKey);lk(KB.AutoLeft,cfg.autoLeftKey);lk(KB.AutoRight,cfg.autoRightKey)
 		lk(KB.AutoBat,cfg.autoBatKey);lk(KB.LaggerToggle,cfg.laggerToggleKey)
