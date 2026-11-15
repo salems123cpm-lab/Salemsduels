@@ -1,5 +1,5 @@
 -- ============================================================
--- 🎄 INTRO: NAVIDAD + EXPLOSIÓN + ECO SALEMSDUELS 🎄
+-- ⚡ INTRO: CYBERPUNK / PREMIUM / GLAZIER ⚡
 -- ============================================================
 repeat task.wait() until game:IsLoaded()
 local Players = game:GetService("Players")
@@ -9,150 +9,145 @@ local RunService = game:GetService("RunService")
 local LP = Players.LocalPlayer
 
 local introGui = Instance.new("ScreenGui")
-introGui.Name = "SalemsChristmasIntro"
+introGui.Name = "SalemsPremiumIntro"
 introGui.ResetOnSpawn = false
 introGui.IgnoreGuiInset = true
 introGui.DisplayOrder = 9999
 introGui.Parent = LP:WaitForChild("PlayerGui")
 
+-- Fondo Negro
 local bg = Instance.new("Frame", introGui)
 bg.Size = UDim2.new(1,0,1,0)
-bg.BackgroundColor3 = Color3.fromRGB(5, 15, 5)
+bg.BackgroundColor3 = Color3.fromRGB(5, 5, 10)
 bg.BackgroundTransparency = 0
 bg.BorderSizePixel = 0
 
-local boom = Instance.new("Sound", SoundService)
-boom.SoundId = "rbxassetid://1597639410"
-boom.Volume = 2
-pcall(function() boom:Play() end)
+-- Sonidos (Impacto y Carga)
+local impactSound = Instance.new("Sound", SoundService)
+impactSound.SoundId = "rbxassetid://1588058260" -- Sonido de glitch/impacto
+impactSound.Volume = 2
+pcall(function() impactSound:Play() end)
 
-local jingle = Instance.new("Sound", SoundService)
-jingle.SoundId = "rbxassetid://9118610287"
-jingle.Volume = 4
-jingle.PlaybackSpeed = 1.2
-jingle.RollOffMaxDistance = 0
-jingle.Parent = SoundService
+local bassSound = Instance.new("Sound", SoundService)
+bassSound.SoundId = "rbxassetid://138186576" -- Bass drop
+bassSound.Volume = 3
+bassSound.PlaybackSpeed = 0.8
 
-local voice = Instance.new("Sound", SoundService)
-voice.SoundId = "rbxassetid://133370368441865" 
-voice.Volume = 5
-voice.PlaybackSpeed = 0.8 
-voice.RollOffMaxDistance = 0
-voice.Parent = SoundService
+-- Texto Principal (Glitch)
+local mainText = Instance.new("TextLabel", introGui)
+mainText.Size = UDim2.new(1, 0, 0, 100)
+mainText.Position = UDim2.new(0, 0, 0.5, -80)
+mainText.BackgroundTransparency = 1
+mainText.Text = "SALEMSDUELS"
+mainText.TextColor3 = Color3.fromRGB(200, 100, 200)
+mainText.Font = Enum.Font.GothamBlack
+mainText.TextSize = 50
+mainText.TextTransparency = 1
 
-local flash = Instance.new("Frame", introGui)
-flash.Size = UDim2.new(1,0,1,0)
-flash.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
-flash.BackgroundTransparency = 0
-flash.BorderSizePixel = 0
-
-local boomCircle = Instance.new("Frame", introGui)
-boomCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-boomCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-boomCircle.Size = UDim2.new(0, 10, 0, 10)
-boomCircle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-boomCircle.BorderSizePixel = 0
-Instance.new("UICorner", boomCircle).CornerRadius = UDim.new(1, 0)
-
-local snowflakes = {}
-for i = 1, 100 do
-    local snow = Instance.new("Frame", introGui)
-    snow.Size = UDim2.new(0, math.random(3,8), 0, math.random(3,8))
-    snow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    snow.BorderSizePixel = 0
-    snow.Position = UDim2.new(math.random(), 0, math.random() * -1, 0)
-    snow.ZIndex = 2
-    Instance.new("UICorner", snow).CornerRadius = UDim.new(1, 0)
-    table.insert(snowflakes, {frame = snow, speed = math.random(30, 80) / 1000})
-end
-
-local snowConn
-snowConn = RunService.RenderStepped:Connect(function()
-    for _, flake in ipairs(snowflakes) do
-        if flake.frame and flake.frame.Parent then
-            local currentPos = flake.frame.Position
-            flake.frame.Position = UDim2.new(currentPos.X.Scale, currentPos.X.Offset, currentPos.Y.Scale + flake.speed, currentPos.Y.Offset)
-            if flake.frame.Position.Y.Scale > 1 then
-                flake.frame.Position = UDim2.new(math.random(), 0, -0.1, 0)
-            end
-        end
-    end
-end)
-
-local echoTexts = {}
-for i = 1, 4 do
-	local echo = Instance.new("TextLabel", introGui)
-	echo.Size = UDim2.new(1, 0, 0, 100)
-	echo.Position = UDim2.new(0, 0, 0.5, -50)
-	echo.BackgroundTransparency = 1
-	echo.Text = "SALEMSDUELS IS THE BEST"
-	echo.TextColor3 = Color3.fromRGB(255, 255, 255)
-	echo.Font = Enum.Font.GothamBlack
-	echo.TextScaled = true
-	echo.TextTransparency = 1
-	echo.ZIndex = 5 + i
-	table.insert(echoTexts, echo)
-end
-
-local text = Instance.new("TextLabel", introGui)
-text.Size = UDim2.new(1, 0, 0, 100)
-text.Position = UDim2.new(0, 0, 0.5, -50)
-text.BackgroundTransparency = 1
-text.Text = "SALEMSDUELS IS THE BEST"
-text.Font = Enum.Font.GothamBlack
-text.TextScaled = true
-text.TextTransparency = 1
-text.ZIndex = 10
-
-local textGrad = Instance.new("UIGradient", text)
+local textGrad = Instance.new("UIGradient", mainText)
 textGrad.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 50)),
-	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 255, 50))
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 50, 255)), -- Rosa neón
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(100, 200, 255)), -- Cian
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 50, 255)) -- Azul
 })
 
-TweenService:Create(bg, TweenInfo.new(0.1), {BackgroundTransparency = 0.5}):Play()
-TweenService:Create(flash, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-TweenService:Create(boomCircle, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-	Size = UDim2.new(0, 2500, 0, 2500),
-	BackgroundTransparency = 1
-}):Play()
+local stroke = Instance.new("UIStroke", mainText)
+stroke.Color = Color3.fromRGB(0, 255, 255)
+stroke.Thickness = 2
 
-task.delay(0.2, function()
-	pcall(function() jingle:Play() end)
-	pcall(function() voice:Play() end)
-	
-	TweenService:Create(text, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
-	
-	for i, echo in ipairs(echoTexts) do
-		task.delay(i * 0.15, function()
-			echo.TextTransparency = 0.3
-			TweenService:Create(echo, TweenInfo.new(1.5), {
-				TextTransparency = 1,
-				Size = UDim2.new(1, 0, 0, 100 + (i * 40)),
-				TextStrokeTransparency = 1
-			}):Play()
-		end)
-	end
-end)
+-- Textos Glitch (Copias del texto con offset)
+local glitchText1 = mainText:Clone()
+glitchText1.TextColor3 = Color3.fromRGB(255, 0, 0)
+glitchText1.Parent = introGui
+local glitchText2 = mainText:Clone()
+glitchText2.TextColor3 = Color3.fromRGB(0, 255, 0)
+glitchText2.Parent = introGui
+glitchText1.TextTransparency = 1
+glitchText2.TextTransparency = 1
 
-task.delay(3.5, function()
-	if snowConn then snowConn:Disconnect() end
-	TweenService:Create(text, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
-	TweenService:Create(bg, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-	for _, echo in ipairs(echoTexts) do
-		TweenService:Create(echo, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
-	end
-	for _, flake in ipairs(snowflakes) do
-	    if flake.frame then
-	        TweenService:Create(flake.frame, TweenInfo.new(0.5), {BackgroundTransparency = 1}):Play()
-	    end
-	end
+-- Subtítulo
+local subText = Instance.new("TextLabel", introGui)
+subText.Size = UDim2.new(1, 0, 0, 30)
+subText.Position = UDim2.new(0, 0, 0.5, 20)
+subText.BackgroundTransparency = 1
+subText.Text = "SYSTEM INITIALIZATION..."
+subText.TextColor3 = Color3.fromRGB(150, 150, 200)
+subText.Font = Enum.Font.Code
+subText.TextSize = 16
+subText.TextTransparency = 1
+
+-- Barra de Carga
+local barBg = Instance.new("Frame", introGui)
+barBg.Size = UDim2.new(0, 300, 0, 6)
+barBg.Position = UDim2.new(0.5, -150, 0.5, 60)
+barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+barBg.BorderSizePixel = 0
+barBg.BackgroundTransparency = 1
+Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+
+local barFill = Instance.new("Frame", barBg)
+barFill.Size = UDim2.new(0, 0, 1, 0)
+barFill.BackgroundColor3 = Color3.fromRGB(200, 100, 255)
+barFill.BorderSizePixel = 0
+barFill.BackgroundTransparency = 1
+Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
+
+-- Animación de Entrada
+task.spawn(function()
+	task.wait(0.2)
+	-- Aparecer el texto
+	TweenService:Create(mainText, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+	TweenService:Create(subText, TweenInfo.new(0.4), {TextTransparency = 0}):Play()
+	TweenService:Create(barBg, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+	TweenService:Create(barFill, TweenInfo.new(0.4), {BackgroundTransparency = 0}):Play()
+	
+	pcall(function() bassSound:Play() end)
+	
+	-- Efecto Glitch durante 0.5 segundos
+	local glitchConn
+	glitchConn = RunService.RenderStepped:Connect(function()
+		local offsetX = math.random(-10, 10)
+		local offsetY = math.random(-5, 5)
+		
+		glitchText1.Position = UDim2.new(0, offsetX, 0.5, -80 + offsetY)
+		glitchText2.Position = UDim2.new(0, -offsetX, 0.5, -80 - offsetY)
+		
+		glitchText1.TextTransparency = math.random(0.5, 0.9)
+		glitchText2.TextTransparency = math.random(0.5, 0.9)
+	end)
+	
+	-- Llenar la barra de carga
+	TweenService:Create(barFill, TweenInfo.new(1.8, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+	
+	task.wait(0.6)
+	subText.Text = "BYPASSING SECURITY..."
+	task.wait(0.8)
+	subText.Text = "INJECTING PAYLOADS..."
+	task.wait(0.6)
+	subText.Text = "ACCESS GRANTED."
+	subText.TextColor3 = Color3.fromRGB(0, 255, 100)
+	
+	if glitchConn then glitchConn:Disconnect() end
+	
+	-- Destello final
+	local flash = Instance.new("Frame", introGui)
+	flash.Size = UDim2.new(1, 0, 1, 0)
+	flash.BackgroundColor3 = Color3.fromRGB(200, 100, 255)
+	flash.BackgroundTransparency = 0.5
+	flash.BorderSizePixel = 0
+	flash.ZIndex = 10
+	TweenService:Create(flash, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+	
+	TweenService:Create(mainText, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+	TweenService:Create(subText, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+	TweenService:Create(barBg, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+	TweenService:Create(barFill, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+	TweenService:Create(bg, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+	
 	task.wait(0.6)
 	introGui:Destroy()
-	if boom and boom.Parent then boom:Destroy() end
-	if jingle and jingle.Parent then jingle:Destroy() end
-	if voice and voice.Parent then voice:Destroy() end
+	if impactSound then impactSound:Destroy() end
+	if bassSound then bassSound:Destroy() end
 end)
 
 -- ============================================================
