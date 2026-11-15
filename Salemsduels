@@ -785,7 +785,7 @@ local function stopAntiRagdoll()
 end
 
 -- ============================================================
--- INFINITE JUMP (2 MODOS: HOLD y MANUAL)
+-- INFINITE JUMP (2 MODOS: OLD y MANUAL)
 -- ============================================================
 local infJumpMode = "hold"
 local manualJumpCooldown = 0
@@ -798,10 +798,13 @@ local function applyInfJumpBoost(boost)
 	if root then root.Velocity=Vector3.new(root.Velocity.X,boost,root.Velocity.Z) end
 end
 UIS.JumpRequest:Connect(function()
-	if infJumpMode == "hold" then applyInfJumpBoost(50) end
+	if infJumpMode == "hold" and infJumpEnabled then
+		applyInfJumpBoost(50)
+	end
 end)
 UIS.InputBegan:Connect(function(input)
 	if input.UserInputType==Enum.UserInputType.Keyboard and input.KeyCode==Enum.KeyCode.Space and not UIS:GetFocusedTextBox() then
+		if not infJumpEnabled then return end
 		if infJumpMode == "manual" then
 			local now = tick()
 			if now - manualJumpCooldown > 0.1 then
@@ -809,23 +812,27 @@ UIS.InputBegan:Connect(function(input)
 				applyInfJumpBoost(65)
 			end
 		else
-			holdJumpPressed=true
-			task.delay(0.12,function()
-				if holdJumpPressed then
-					holdJumpActive=true
-					applyInfJumpBoost(50)
-				end
-			end)
+			-- Modo Old: Toggle de salto infinito (se activa con un toque y se apaga con otro)
+			holdJumpActive = not holdJumpActive
+			if holdJumpActive then
+				applyInfJumpBoost(50)
+			end
 		end
 	end
 end)
 UIS.InputEnded:Connect(function(input)
 	if input.UserInputType==Enum.UserInputType.Keyboard and input.KeyCode==Enum.KeyCode.Space then
-		holdJumpPressed=false;holdJumpActive=false
+		holdJumpPressed=false
 	end
 end)
 RunService.Heartbeat:Connect(function()
-	if holdJumpActive and infJumpMode == "hold" then applyInfJumpBoost(50) end
+	if holdJumpActive and infJumpMode == "hold" and infJumpEnabled then
+		local now = tick()
+		if now - manualJumpCooldown > 0.1 then
+			manualJumpCooldown = now
+			applyInfJumpBoost(50)
+		end
+	end
 end)
 
 local function startUnwalk()
@@ -2065,19 +2072,19 @@ local function runDrop()
 		mkSect("Misc")
 		setInfJumpVisual=mkToggle("Inf Jump",function(on) infJumpEnabled=on end)
 
-		-- Selector de modo para Inf Jump: Hold (viejo) / Manual (cada click)
+		-- Selector de modo para Inf Jump: Old / Manual
 		do
 			local row=mkRow(24);mkLabel(row,"IJ Mode")
 			infJumpModeLbl=Instance.new("TextLabel",row)
 			infJumpModeLbl.Size=UDim2.new(0,60,1,0);infJumpModeLbl.Position=UDim2.new(1,-64,0,0)
-			infJumpModeLbl.BackgroundTransparency=1;infJumpModeLbl.Text=infJumpMode=="hold" and "Hold" or "Manual"
+			infJumpModeLbl.BackgroundTransparency=1;infJumpModeLbl.Text=infJumpMode=="hold" and "Old" or "Manual"
 			infJumpModeLbl.TextColor3=PURPLE;infJumpModeLbl.Font=Enum.Font.GothamBlack;infJumpModeLbl.TextSize=8
 			infJumpModeLbl.TextXAlignment=Enum.TextXAlignment.Right
 			local clk=Instance.new("TextButton",row);clk.Size=UDim2.new(1,0,1,0);clk.BackgroundTransparency=1;clk.Text="";clk.ZIndex=2
 			clk.Activated:Connect(function()
 				if _anyKeyListening then return end
 				infJumpMode=(infJumpMode=="hold") and "manual" or "hold"
-				infJumpModeLbl.Text=(infJumpMode=="hold") and "Hold" or "Manual"
+				infJumpModeLbl.Text=(infJumpMode=="hold") and "Old" or "Manual"
 				holdJumpActive=false;holdJumpPressed=false
 				saveConfig()
 			end)
@@ -2316,7 +2323,7 @@ local function runDrop()
 		if laggerBox then laggerBox.Text=tostring(LAGGER_SPEED) end
 		if laggerCarryBox then laggerCarryBox.Text=tostring(LAGGER_CARRY_SPEED) end
 		if autoTPHeightBox then autoTPHeightBox.Text=tostring(autoTPHeight) end
-		if infJumpModeLbl then infJumpModeLbl.Text=(infJumpMode=="hold") and "Hold" or "Manual" end
+		if infJumpModeLbl then infJumpModeLbl.Text=(infJumpMode=="hold") and "Old" or "Manual" end
 		if setMobileButtonsVisual then setMobileButtonsVisual(mobileButtonsVisible) end
 		if setMobileLockVisual then setMobileLockVisual(mobileButtonsLocked) end
 		if refreshMobileButtons then refreshMobileButtons() end
