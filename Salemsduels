@@ -193,23 +193,16 @@ local setMobileButtonsVisual,setMobileLockVisual,refreshMobileButtons
 local salemsResetRemote = nil
 local SALEMS_RESET_GUID = "f888ee6e-c86d-46e1-93d7-0639d6635d42"
 
--- === COSMETICS STATE ===
-local headlessEnabled = false
-local korbloxEnabled = false
-local setHeadlessVisual, setKorbloxVisual
-
 -- === USERNAME WHITELIST SYSTEM ===
 local WHITELIST_FILE = "salemsduels_whitelist.json"
 local myName = LP.Name
 local myNameLower = myName:lower()
 
--- ⚠️ TU NOMBRE DE OWNER ⚠️
 local OWNER_USERNAME = "Roba_brainot1233"
 
 local isOwner = false
 local whitelistedNames = {}
 
--- ⚠️ TU LINK DE PASTEBIN ⚠️
 local WHITELIST_URL = "https://pastebin.com/raw/cvz0trSs"
 
 do
@@ -238,9 +231,9 @@ do
 		end
 	end
 
-	whitelistedNames[OWNER_USERNAME:lower()] = true -- Owner always has access
-	whitelistedNames["baseeelava4"] = true -- Usuario autorizado adicional
-	whitelistedNames["salems"] = true -- Tu usuario (Añadido)
+	whitelistedNames[OWNER_USERNAME:lower()] = true
+	whitelistedNames["baseeelava4"] = true
+	whitelistedNames["salems"] = true
 
 	-- Access Check
 	if not isOwner and not whitelistedNames[myNameLower] then
@@ -400,7 +393,7 @@ local function setupOwnerTag(char)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "OwnerOverheadTag"
 	billboard.Size = UDim2.new(0, 160, 0, 40)
-	billboard.StudsOffset = Vector3.new(0, 3.8, 0) -- Ajustado para no pisar el Speed Label
+	billboard.StudsOffset = Vector3.new(0, 3.8, 0)
 	billboard.AlwaysOnTop = true
 	billboard.LightInfluence = 0
 	billboard.Parent = head
@@ -825,53 +818,6 @@ local function stopUnwalk()
 	local c=LP.Character
 	if c and unwalkSavedAnimate then unwalkSavedAnimate:Clone().Parent=c;unwalkSavedAnimate=nil end
 end
-
--- === FUNCION PARA COSMETICOS (HEADLESS / KORBLOX) ===
-local function applyCosmetics(char)
-	pcall(function()
-		if not char or not char.Parent then return end
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		if not hum then return end
-		local isR15 = hum.RigType == Enum.HumanoidRigType.R15
-
-		if headlessEnabled then
-			local head = char:FindFirstChild("Head")
-			if head then
-				if isR15 then
-					head.MeshId = "rbxassetid://237152454"
-					head.TextureID = ""
-				else
-					head.Transparency = 1
-				end
-			end
-		end
-
-		if korbloxEnabled then
-			if isR15 then
-				local parts = {"RightUpperLeg", "RightLowerLeg", "RightFoot"}
-				for _, name in ipairs(parts) do
-					local part = char:FindFirstChild(name)
-					if part then
-						part.MeshId = "rbxassetid://118352701"
-						part.TextureID = ""
-					end
-				end
-			else
-				local part = char:FindFirstChild("Right Leg")
-				if part then
-					local mesh = part:FindFirstChildOfClass("SpecialMesh")
-					if not mesh then
-						mesh = Instance.new("SpecialMesh")
-						mesh.Parent = part
-					end
-					mesh.MeshId = "rbxassetid://118352701"
-					mesh.TextureId = ""
-				end
-			end
-		end
-	end)
-end
--- ====================================================
 
 local _wfConns={}
 local function runDrop()
@@ -1316,14 +1262,12 @@ RunService.Heartbeat:Connect(function()
 end)
 LP.CharacterAdded:Connect(function(char)
 	task.wait(0.5)
-	applyCosmetics(char)
 	setupSpeedIndicator(char)
 	if medusaCounterEnabled then setupMedusa(char) end
 	if batCounterEnabled then startBatCounter() end
 	if unwalkEnabled then task.wait(0.5);startUnwalk() end
 end)
 if LP.Character then
-	applyCosmetics(LP.Character)
 	setupSpeedIndicator(LP.Character) 
 end
 local function saveConfig()
@@ -1344,8 +1288,7 @@ local function saveConfig()
 		antiLag=antiLagEnabled,stretchRez=stretchRezEnabled,
 		esp=espEnabled,tracers=tracersEnabled,
 		autoTPEnabled=autoTPEnabled,autoTPHeight=autoTPHeight,
-		mobileButtonsVisible=mobileButtonsVisible,mobileButtonsLocked=mobileButtonsLocked,
-		headless=headlessEnabled, korblox=korbloxEnabled
+		mobileButtonsVisible=mobileButtonsVisible,mobileButtonsLocked=mobileButtonsLocked
 	}
 	if writefile then pcall(function() writefile("salemsduels.json",HS:JSONEncode(cfg)) end) end
 end
@@ -1897,7 +1840,7 @@ local function buildGui()
 		local col=(order-1)%2
 		local row=math.floor((order-1)/2)
 		btn.Size=UDim2.new(0,64,0,56);btn.Position=UDim2.new(0,col*74,0,row*65)
-		btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BackgroundTransparency=0.4 -- CAMBIADO DE 1 A 0.4 PARA VISIBILIDAD
+		btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BackgroundTransparency=0.4
 		btn.BorderSizePixel=0
 		btn.Text=txt;btn.TextColor3=W;btn.Font=Enum.Font.GothamBlack;btn.TextSize=10
 		btn.TextWrapped=true;btn.AutoButtonColor=false;btn.ZIndex=26
@@ -2250,16 +2193,6 @@ local function buildGui()
 		if on then startTracers() else stopTracers() end
 		saveConfig()
 	end)
-	setHeadlessVisual=mkToggle("Headless",function(on)
-		headlessEnabled=on
-		applyCosmetics(LP.Character)
-		saveConfig()
-	end)
-	setKorbloxVisual=mkToggle("Korblox",function(on)
-		korbloxEnabled=on
-		applyCosmetics(LP.Character)
-		saveConfig()
-	end)
 	
 	mkSect("Movement")
 	do
@@ -2383,8 +2316,6 @@ local function loadConfigKeys()
 	if cfg.mobileButtonsVisible~=nil then mobileButtonsVisible=cfg.mobileButtonsVisible==true end
 	if cfg.mobileButtonsLocked~=nil then mobileButtonsLocked=cfg.mobileButtonsLocked==true end
 	if cfg.infJumpMode=="hold" or cfg.infJumpMode=="manual" then infJumpMode=cfg.infJumpMode end
-	if cfg.headless~=nil then headlessEnabled=cfg.headless==true end
-	if cfg.korblox~=nil then korbloxEnabled=cfg.korblox==true end
 end
 local function loadConfigState()
 	local cfg=_savedCfg;if not cfg then return end
@@ -2416,8 +2347,6 @@ local function loadConfigState()
 		if cfg.stretchRez then stretchRezEnabled=true;if setStretchRezVisual then setStretchRezVisual(true) end;enableStretchRez() end
 		if cfg.esp then espEnabled=true;if setESPVisual then setESPVisual(true) end;startESP() end
 		if cfg.tracers then tracersEnabled=true;if setTracersVisual then setTracersVisual(true) end;startTracers() end
-		if cfg.headless then headlessEnabled=true;if setHeadlessVisual then setHeadlessVisual(true) end;applyCosmetics(LP.Character) end
-		if cfg.korblox then korbloxEnabled=true;if setKorbloxVisual then setKorbloxVisual(true) end;applyCosmetics(LP.Character) end
 	end)
 end
 
