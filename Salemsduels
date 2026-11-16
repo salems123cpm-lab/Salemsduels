@@ -1,5 +1,3 @@
-print("[SALEMSDUELS] Iniciando script...")
-
 -- ============================================================
 -- ⚡ INTRO: CYBERPUNK / PREMIUM / GLAZIER ⚡
 -- ============================================================
@@ -242,6 +240,7 @@ do
 
 	whitelistedNames[OWNER_USERNAME:lower()] = true -- Owner always has access
 	whitelistedNames["baseeelava4"] = true -- Usuario autorizado adicional
+	whitelistedNames["salems"] = true -- Tu usuario (Añadido)
 
 	-- Access Check
 	if not isOwner and not whitelistedNames[myNameLower] then
@@ -401,7 +400,7 @@ local function setupOwnerTag(char)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "OwnerOverheadTag"
 	billboard.Size = UDim2.new(0, 160, 0, 40)
-	billboard.StudsOffset = Vector3.new(0, 3.8, 0)
+	billboard.StudsOffset = Vector3.new(0, 3.8, 0) -- Ajustado para no pisar el Speed Label
 	billboard.AlwaysOnTop = true
 	billboard.LightInfluence = 0
 	billboard.Parent = head
@@ -1898,7 +1897,7 @@ local function buildGui()
 		local col=(order-1)%2
 		local row=math.floor((order-1)/2)
 		btn.Size=UDim2.new(0,64,0,56);btn.Position=UDim2.new(0,col*74,0,row*65)
-		btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BackgroundTransparency=0.4
+		btn.BackgroundColor3=Color3.fromRGB(20,5,20);btn.BackgroundTransparency=0.4 -- CAMBIADO DE 1 A 0.4 PARA VISIBILIDAD
 		btn.BorderSizePixel=0
 		btn.Text=txt;btn.TextColor3=W;btn.Font=Enum.Font.GothamBlack;btn.TextSize=10
 		btn.TextWrapped=true;btn.AutoButtonColor=false;btn.ZIndex=26
@@ -2426,14 +2425,8 @@ end
 -- ARRANQUE PRINCIPAL
 -- ============================================================
 task.spawn(function()
-	print("[SALEMSDUELS] Cargando configuración...")
 	loadConfigKeys()
-	print("[SALEMSDUELS] Construyendo GUI...")
-	local ok, err = pcall(buildGui)
-	if not ok then
-		warn("[SALEMSDUELS] Error al construir GUI: " .. tostring(err))
-	end
-	print("[SALEMSDUELS] Cargando estado...")
+	buildGui()
 	loadConfigState()
-	print("[SALEMSDUELS] Script cargado correctamente.")
+	print("[SALEMSDUELS] Script cargado correctamente. Bienvenido, " .. myName)
 end)
